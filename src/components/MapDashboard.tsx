@@ -2,6 +2,7 @@
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Map, Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
@@ -165,11 +166,21 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   } | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const router = useRouter();
 
   const clearDraftLocation = useCallback(() => {
     setDraftLocation(null);
     setRecommendations([]);
   }, []);
+
+  // The recommendations list stays open and the map pin stays put after a pick —
+  // dispatchers compare several dates by trial and error before committing.
+  const selectRecommendation = useCallback(
+    (recommendation: Recommendation) => {
+      router.push(`/?date=${recommendation.task.scheduled_date}`);
+    },
+    [router],
+  );
 
   /** Always relative to the real current date, not `date` — see getRecommendations(). */
   useEffect(() => {
@@ -322,17 +333,23 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         ) : null}
 
         {draftLocation ? (
-          <div className="flex flex-col gap-2 rounded-lg border border-[#e1e0d9] bg-white p-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-[#0b0b0b]">המלצות רכבים</h3>
-              <button
-                type="button"
-                onClick={clearDraftLocation}
-                className="text-[11px] text-[#898781] underline"
-              >
-                נקה חיפוש
-              </button>
-            </div>
+          <div className="flex items-center justify-between rounded-lg border border-[#e1e0d9] bg-white px-3 py-2">
+            <span className="truncate text-xs font-medium text-[#0b0b0b]">
+              {draftLocation.address}
+            </span>
+            <button
+              type="button"
+              onClick={clearDraftLocation}
+              className="shrink-0 text-[11px] text-[#898781] underline"
+            >
+              נקה חיפוש
+            </button>
+          </div>
+        ) : null}
+
+        {draftLocation ? (
+          <div className="flex flex-col gap-2 rounded-lg border border-[#e1e0d9] bg-[#f0efec] p-3">
+            <h3 className="text-xs font-semibold text-[#0b0b0b]">המלצות רכבים</h3>
 
             {recommendationsLoading ? (
               <p className="text-[11px] text-[#898781]">טוען המלצות…</p>
@@ -341,17 +358,23 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
                 לא נמצאו רכבים ברדיוס 20 ק״מ ב-4 הימים הקרובים
               </p>
             ) : (
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex max-h-64 flex-col gap-1.5 overflow-y-auto">
                 {recommendations.map((rec) => (
-                  <li key={rec.task.id} className="rounded-md bg-[#f9f9f7] px-2 py-1.5 text-[11px]">
-                    <div className="flex items-center justify-between font-medium text-[#0b0b0b] tabular-nums">
-                      <span>{rec.task.scheduled_date}</span>
-                      <span>{rec.distanceKm.toFixed(1)} ק״מ</span>
-                    </div>
-                    <div className="text-[#52514e]">
-                      {rec.task.installer_name ?? t.tooltip.unassignedInstaller} ·{' '}
-                      {rec.task.time_window ?? '—'}
-                    </div>
+                  <li key={rec.task.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectRecommendation(rec)}
+                      className="w-full rounded-md bg-[#f9f9f7] px-2 py-1.5 text-start text-[11px] transition-colors hover:bg-[#f0efec]"
+                    >
+                      <div className="flex items-center justify-between font-medium text-[#0b0b0b] tabular-nums">
+                        <span>{rec.task.scheduled_date}</span>
+                        <span>{rec.distanceKm.toFixed(1)} ק״מ</span>
+                      </div>
+                      <div className="text-[#52514e]">
+                        {rec.task.installer_name ?? t.tooltip.unassignedInstaller} ·{' '}
+                        {rec.task.time_window ?? '—'}
+                      </div>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -440,15 +463,20 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
           })}
 
           {draftLocation ? (
-            <Marker
-              longitude={draftLocation.lng}
-              latitude={draftLocation.lat}
-              anchor="center"
-            >
-              <span className="relative flex h-4 w-4" title={draftLocation.address}>
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8B5CF6] opacity-75" />
-                <span className="relative inline-flex h-4 w-4 rounded-full bg-[#8B5CF6] ring-2 ring-white" />
-              </span>
+            <Marker longitude={draftLocation.lng} latitude={draftLocation.lat} anchor="bottom">
+              <div
+                className="relative flex h-8 w-8 items-center justify-center"
+                title={draftLocation.address}
+              >
+                <span className="absolute bottom-0 h-3 w-3 animate-ping rounded-full bg-pink-500 opacity-60" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="relative h-8 w-8 text-pink-500 drop-shadow-[0_2px_5px_rgba(0,0,0,0.55)]"
+                >
+                  <path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 7 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
+                </svg>
+              </div>
             </Marker>
           ) : null}
 
