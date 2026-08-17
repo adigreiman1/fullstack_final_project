@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Map, Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
 
+import { getRecommendations, type Recommendation } from '@/actions/tasks';
+import { AddressSearch } from '@/components/AddressSearch';
 import { useI18n } from '@/components/LanguageProvider';
 import { RouteLayer } from '@/components/RouteLayer';
 import { TaskTooltip } from '@/components/TaskTooltip';
@@ -156,11 +158,53 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   }, []);
 
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [draftLocation, setDraftLocation] = useState<{
+    lat: number;
+    lng: number;
+    address: string;
+  } | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+
+  const clearDraftLocation = useCallback(() => {
+    setDraftLocation(null);
+    setRecommendations([]);
+  }, []);
+
+  /** Always relative to the real current date, not `date` — see getRecommendations(). */
+  useEffect(() => {
+    if (!draftLocation) {
+      setRecommendations([]);
+      return;
+    }
+
+    let cancelled = false;
+    setRecommendationsLoading(true);
+
+    getRecommendations(draftLocation.lat, draftLocation.lng).then((result) => {
+      if (cancelled) return;
+      setRecommendations(result);
+      setRecommendationsLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftLocation]);
 
   useEffect(() => {
     if (!mapLoaded || !bounds) return;
     mapRef.current?.fitBounds(bounds, { padding: 72, maxZoom: 14, duration: 0 });
   }, [mapLoaded, bounds]);
+
+  useEffect(() => {
+    if (!mapLoaded || !draftLocation) return;
+    mapRef.current?.flyTo({
+      center: [draftLocation.lng, draftLocation.lat],
+      zoom: Math.max(mapRef.current.getZoom(), 14),
+      duration: 800,
+    });
+  }, [mapLoaded, draftLocation]);
 
   /**
    * Basemap labels follow the UI language.
@@ -277,6 +321,44 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
           </p>
         ) : null}
 
+        {draftLocation ? (
+          <div className="flex flex-col gap-2 rounded-lg border border-[#e1e0d9] bg-white p-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-[#0b0b0b]">המלצות רכבים</h3>
+              <button
+                type="button"
+                onClick={clearDraftLocation}
+                className="text-[11px] text-[#898781] underline"
+              >
+                נקה חיפוש
+              </button>
+            </div>
+
+            {recommendationsLoading ? (
+              <p className="text-[11px] text-[#898781]">טוען המלצות…</p>
+            ) : recommendations.length === 0 ? (
+              <p className="text-[11px] text-[#52514e]">
+                לא נמצאו רכבים ברדיוס 20 ק״מ ב-4 הימים הקרובים
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {recommendations.map((rec) => (
+                  <li key={rec.task.id} className="rounded-md bg-[#f9f9f7] px-2 py-1.5 text-[11px]">
+                    <div className="flex items-center justify-between font-medium text-[#0b0b0b] tabular-nums">
+                      <span>{rec.task.scheduled_date}</span>
+                      <span>{rec.distanceKm.toFixed(1)} ק״מ</span>
+                    </div>
+                    <div className="text-[#52514e]">
+                      {rec.task.installer_name ?? t.tooltip.unassignedInstaller} ·{' '}
+                      {rec.task.time_window ?? '—'}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
+
         {/* Legend and stop table in one: identity is never carried by colour
             alone, and this doubles as the visible-label relief the low-contrast
             palette slots require. */}
@@ -300,6 +382,8 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
       </aside>
 
       <div className="relative flex-1">
+        <AddressSearch onSelect={setDraftLocation} />
+
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
@@ -354,6 +438,19 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
               </Marker>
             ));
           })}
+
+          {draftLocation ? (
+            <Marker
+              longitude={draftLocation.lng}
+              latitude={draftLocation.lat}
+              anchor="center"
+            >
+              <span className="relative flex h-4 w-4" title={draftLocation.address}>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8B5CF6] opacity-75" />
+                <span className="relative inline-flex h-4 w-4 rounded-full bg-[#8B5CF6] ring-2 ring-white" />
+              </span>
+            </Marker>
+          ) : null}
 
           {activeTask && activeGroup ? (
             <TaskTooltip
