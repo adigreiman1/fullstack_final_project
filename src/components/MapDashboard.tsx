@@ -26,6 +26,7 @@ import {
   toCoordinateParam,
   type VehicleGroup,
 } from '@/lib/routes';
+import { formatFullDate } from '@/lib/utils';
 import type { ServiceTask } from '@/types/schema';
 
 interface MapDashboardProps {
@@ -59,7 +60,7 @@ function emptyDayView(date: string): DayView {
 }
 
 export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
-  const { t, language } = useI18n();
+  const { t, language, locale } = useI18n();
   const mapRef = useRef<MapRef | null>(null);
 
   /**
@@ -310,7 +311,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     <div className="flex flex-1 overflow-hidden">
       {/* border-e / ms-* rather than border-r / ml-*: logical properties flip
           with dir="rtl" on their own, physical ones do not. */}
-      <aside className="flex w-[336px] shrink-0 flex-col gap-4 overflow-y-auto border-e border-[#e1e0d9] bg-[#f9f9f7] px-5 py-5">
+      <aside className="flex w-[336px] shrink-0 flex-col gap-4 overflow-y-auto border-e border-[#e1e0d9] bg-sky-50 px-5 py-5">
         <div className="flex flex-col gap-1">
           <h2 className="text-[13px] font-semibold tracking-wide text-[#0b0b0b] uppercase">
             {t.sidebar.heading}
@@ -333,8 +334,8 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         ) : null}
 
         {draftLocation ? (
-          <div className="flex items-center justify-between rounded-lg border border-[#e1e0d9] bg-white px-3 py-2">
-            <span className="truncate text-xs font-medium text-[#0b0b0b]">
+          <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm">
+            <span className="truncate text-xs font-medium text-slate-800">
               {draftLocation.address}
             </span>
             <button
@@ -342,21 +343,19 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
               onClick={clearDraftLocation}
               className="shrink-0 text-[11px] text-[#898781] underline"
             >
-              נקה חיפוש
+              {t.recommendations.clearSearch}
             </button>
           </div>
         ) : null}
 
         {draftLocation ? (
-          <div className="flex flex-col gap-2 rounded-lg border border-[#e1e0d9] bg-[#f0efec] p-3">
-            <h3 className="text-xs font-semibold text-[#0b0b0b]">המלצות רכבים</h3>
+          <div className="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm">
+            <h3 className="text-xs font-semibold text-slate-800">{t.recommendations.heading}</h3>
 
             {recommendationsLoading ? (
-              <p className="text-[11px] text-[#898781]">טוען המלצות…</p>
+              <p className="text-[11px] text-[#898781]">{t.recommendations.loading}</p>
             ) : recommendations.length === 0 ? (
-              <p className="text-[11px] text-[#52514e]">
-                לא נמצאו רכבים ברדיוס 20 ק״מ ב-4 הימים הקרובים
-              </p>
+              <p className="text-[11px] text-[#52514e]">{t.recommendations.empty}</p>
             ) : (
               <ul className="flex max-h-64 flex-col gap-1.5 overflow-y-auto">
                 {recommendations.map((rec) => (
@@ -364,16 +363,16 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
                     <button
                       type="button"
                       onClick={() => selectRecommendation(rec)}
-                      className="w-full rounded-md bg-[#f9f9f7] px-2 py-1.5 text-start text-[11px] transition-colors hover:bg-[#f0efec]"
+                      className="w-full rounded-lg bg-slate-50 px-2 py-1.5 text-start text-[11px] transition-colors hover:bg-slate-100"
                     >
-                      <div className="flex items-center justify-between font-medium text-[#0b0b0b] tabular-nums">
-                        <span>{rec.task.scheduled_date}</span>
-                        <span>{rec.distanceKm.toFixed(1)} ק״מ</span>
+                      <div className="flex items-center justify-between tabular-nums">
+                        <span>{formatFullDate(rec.task.scheduled_date, locale)}</span>
+                        <span>{rec.distanceKm.toFixed(1)} {t.units.km}</span>
                       </div>
-                      <div className="text-[#52514e]">
-                        {rec.task.installer_name ?? t.tooltip.unassignedInstaller} ·{' '}
-                        {rec.task.time_window ?? '—'}
+                      <div className="font-bold text-slate-800">
+                        {rec.task.installer_name ?? t.tooltip.unassignedInstaller}
                       </div>
+                      <div className="text-[#52514e]">{rec.task.time_window ?? '—'}</div>
                     </button>
                   </li>
                 ))}
@@ -405,7 +404,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
       </aside>
 
       <div className="relative flex-1">
-        <AddressSearch onSelect={setDraftLocation} />
+        <AddressSearch onSelect={setDraftLocation} draftLocation={draftLocation} />
 
         <Map
           ref={mapRef}
@@ -583,8 +582,8 @@ function VehicleLegendRow({
 
   return (
     <li
-      className={`rounded-lg border bg-white transition-opacity ${
-        focused ? 'border-[#898781]' : 'border-[#e1e0d9]'
+      className={`rounded-xl bg-white shadow-sm transition-shadow ${
+        focused ? 'shadow-md' : ''
       } ${hidden ? 'opacity-55' : ''}`}
       onMouseEnter={onFocus}
       onMouseLeave={onBlur}
@@ -597,9 +596,7 @@ function VehicleLegendRow({
       >
         <DashPreview color={group.color} dashArray={group.dashArray} muted={hidden} />
         <span className="flex flex-col">
-          <span className="font-mono text-xs font-medium text-[#0b0b0b]">
-            {group.vehicleId}
-          </span>
+          <span className="font-mono text-lg font-bold text-slate-800">{group.vehicleId}</span>
           <span className="text-[11px] text-[#52514e] tabular-nums">
             {t.sidebar.stops(group.tasks.length)}
             {route?.status === 'ready' && route.distanceMeters !== null

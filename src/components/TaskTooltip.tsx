@@ -44,6 +44,12 @@ export function TaskTooltip({
     // Plate numbers, phone numbers and time windows stay LTR even in a Hebrew
     // layout: they read left-to-right, and inheriting RTL reorders the digits.
     { label: t.tooltip.carPlate, value: task.car_plate ?? '', dir: 'ltr' },
+    // service_tasks has no vehicle-type column yet; assumed field name is
+    // `vehicle_type` — falls back to a placeholder until SAP mirrors it.
+    {
+      label: t.tooltip.vehicleType,
+      value: (task as { vehicle_type?: string }).vehicle_type ?? t.tooltip.vehicleTypePlaceholder,
+    },
     { label: t.tooltip.contact, value: task.customer_name ?? '' },
     { label: t.tooltip.phone, value: task.customer_phone ?? '', dir: 'ltr' },
     { label: t.tooltip.address, value: task.address },

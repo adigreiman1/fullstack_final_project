@@ -9,20 +9,18 @@ export const MAX_OPTIMIZATION_COORDINATES = 12;
 
 /**
  * Categorical palette, one slot per vehicle, assigned in fixed order and never
- * cycled. Validated against the light-v11 land surface (#f8f4f0) for all pairs
- * — every route is on screen at once, so adjacent-pair validation is not enough:
- *   worst normal-vision ΔE 15.6, worst CVD ΔE 6.9 (deutan, aqua↔red).
- * A CVD ΔE in the 6–8 band is only legal with a second, non-colour encoding, so
- * every route also carries a distinct dash pattern, numbered stop markers and a
- * labelled legend row (see VEHICLE_DASH_ARRAYS).
+ * cycled. Saturated Tailwind 500-level tones so routes and markers stay legible
+ * against the light basemap; every route also carries a distinct dash pattern,
+ * numbered stop markers and a labelled legend row (see VEHICLE_DASH_ARRAYS) as
+ * a non-colour encoding.
  */
 export const VEHICLE_COLORS = [
-  '#2a78d6', // blue
-  '#1baf7a', // aqua
-  '#eda100', // yellow
-  '#008300', // green
-  '#4a3aa7', // violet
-  '#e34948', // red
+  '#3B82F6', // vibrant blue
+  '#10B981', // emerald green
+  '#8B5CF6', // vibrant purple
+  '#EF4444', // vibrant red
+  '#F59E0B', // amber/orange
+  '#06B6D4', // cyan
 ] as const;
 
 /**

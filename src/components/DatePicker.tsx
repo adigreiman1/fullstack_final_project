@@ -132,16 +132,12 @@ export function DatePicker({ date, today }: DatePickerProps) {
   const days = monthGrid(cursor);
   const weekdays = weekdayInitials(locale);
 
-  // In RTL the buttons swap sides, so the glyphs have to swap with them or
-  // "previous" ends up on the right pointing left.
-  const backGlyph = direction === 'rtl' ? '›' : '‹';
-  const forwardGlyph = direction === 'rtl' ? '‹' : '›';
-
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
+      <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 shadow-sm">
       <NavButton
         label={t.datePicker.previousDay}
-        glyph={backGlyph}
+        direction="back"
         disabled={isPending}
         onClick={() => goToDate(addDays(date, -1))}
       />
@@ -153,14 +149,14 @@ export function DatePicker({ date, today }: DatePickerProps) {
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={togglePopover}
-          className="flex min-w-[190px] items-center justify-center gap-2 rounded-md border border-[#e1e0d9] px-3 py-1.5 text-sm font-medium text-[#0b0b0b] transition-colors hover:bg-[#f9f9f7]"
+          className="flex min-w-[190px] items-center justify-center gap-2 rounded-md px-3 py-1.5 text-md font-semibold text-slate-700 transition-all hover:bg-white hover:shadow-sm"
         >
-          <span aria-hidden className="text-[#898781]">
+          <span aria-hidden className="text-slate-400">
             ▤
           </span>
           <span className="tabular-nums">{formatFullDate(date, locale)}</span>
           {relativeKey ? (
-            <span className="text-xs text-[#898781]">{t.datePicker[relativeKey]}</span>
+            <span className="text-xs font-normal text-slate-400">{t.datePicker[relativeKey]}</span>
           ) : null}
         </button>
 
@@ -174,7 +170,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
             <div className="mb-2 flex items-center justify-between">
               <NavButton
                 label={t.datePicker.previousMonth}
-                glyph={backGlyph}
+                direction="back"
                 onClick={() => setCursor((current) => addMonths(current, -1))}
               />
               <span aria-live="polite" className="text-sm font-medium text-[#0b0b0b]">
@@ -182,7 +178,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
               </span>
               <NavButton
                 label={t.datePicker.nextMonth}
-                glyph={forwardGlyph}
+                direction="forward"
                 onClick={() => setCursor((current) => addMonths(current, 1))}
               />
             </div>
@@ -250,7 +246,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
 
       <NavButton
         label={t.datePicker.nextDay}
-        glyph={forwardGlyph}
+        direction="forward"
         disabled={isPending}
         onClick={() => goToDate(addDays(date, 1))}
       />
@@ -260,18 +256,19 @@ export function DatePicker({ date, today }: DatePickerProps) {
           type="button"
           disabled={isPending}
           onClick={() => goToDate(today)}
-          className="ms-1 rounded-md border border-[#e1e0d9] px-2.5 py-1.5 text-xs font-medium text-[#52514e] transition-colors hover:bg-[#f9f9f7] disabled:opacity-60"
+          className="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-all hover:bg-white hover:shadow-sm disabled:opacity-60"
         >
           {t.datePicker.today}
         </button>
       )}
+      </div>
 
       {/* Announced to screen readers, and the only visual cue that a slower day
           is still loading — the map keeps the previous day until the RSC lands. */}
       <span
         role="status"
         aria-live="polite"
-        className={`ms-1 text-xs text-[#898781] transition-opacity ${
+        className={`text-xs text-slate-400 transition-opacity ${
           isPending ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -283,12 +280,15 @@ export function DatePicker({ date, today }: DatePickerProps) {
 
 function NavButton({
   label,
-  glyph,
+  direction,
   onClick,
   disabled = false,
 }: {
   label: string;
-  glyph: string;
+  /** 'back' points left, 'forward' points right — both by CSS logical/physical
+   *  direction in LTR. `rtl:rotate-180` flips them for RTL, so the chevron's
+   *  physical direction always matches the way it moves the calendar. */
+  direction: 'back' | 'forward';
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -299,9 +299,20 @@ function NavButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-8 place-items-center rounded-md border border-[#e1e0d9] text-base leading-none text-[#52514e] transition-colors hover:bg-[#f9f9f7] disabled:opacity-60"
+      className="grid size-8 place-items-center rounded-md text-slate-500 transition-all hover:bg-white hover:shadow-sm disabled:opacity-60"
     >
-      <span aria-hidden>{glyph}</span>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        className="h-4 w-4 rtl:rotate-180"
+      >
+        {direction === 'back' ? <path d="M15 18l-6-6 6-6" /> : <path d="M9 18l6-6-6-6" />}
+      </svg>
     </button>
   );
 }

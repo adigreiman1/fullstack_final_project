@@ -71,6 +71,9 @@ export interface Dictionary {
     optimising: string;
     unrouted: string;
     carPlate: string;
+    /** service_tasks has no vehicle-type column yet; shown until one exists. */
+    vehicleType: string;
+    vehicleTypePlaceholder: string;
     contact: string;
     phone: string;
     address: string;
@@ -80,6 +83,17 @@ export interface Dictionary {
 
   toasts: {
     routeFailed: (vehicleId: string) => string;
+  };
+
+  addressSearch: {
+    placeholder: string;
+  };
+
+  recommendations: {
+    heading: string;
+    loading: string;
+    empty: string;
+    clearSearch: string;
   };
 
   /** Distance and duration suffixes, passed into the formatters in lib/routes.ts. */
@@ -137,6 +151,8 @@ const EN: Dictionary = {
     optimising: 'Optimising…',
     unrouted: 'Unrouted',
     carPlate: 'Car Plate',
+    vehicleType: 'Vehicle Type',
+    vehicleTypePlaceholder: 'Van',
     contact: 'Contact',
     phone: 'Phone',
     address: 'Address',
@@ -146,6 +162,17 @@ const EN: Dictionary = {
 
   toasts: {
     routeFailed: (vehicleId) => `Could not optimise ${vehicleId} — showing its stops only.`,
+  },
+
+  addressSearch: {
+    placeholder: 'Search address...',
+  },
+
+  recommendations: {
+    heading: 'Vehicle Recommendations',
+    loading: 'Loading recommendations…',
+    empty: 'No vehicles found within 20 km in the next 4 days.',
+    clearSearch: 'Clear Search',
   },
 
   units: { km: 'km', m: 'm', min: 'min', hour: 'h' },
@@ -198,6 +225,8 @@ const HE: Dictionary = {
     optimising: 'מחשב…',
     unrouted: 'ללא מסלול',
     carPlate: 'מספר רכב',
+    vehicleType: 'סוג רכב',
+    vehicleTypePlaceholder: 'מסחרית',
     contact: 'איש קשר',
     phone: 'טלפון',
     address: 'כתובת',
@@ -207,6 +236,17 @@ const HE: Dictionary = {
 
   toasts: {
     routeFailed: (vehicleId) => `לא ניתן לחשב מסלול עבור ${vehicleId} — מוצגות עצירות בלבד.`,
+  },
+
+  addressSearch: {
+    placeholder: 'חיפוש כתובת...',
+  },
+
+  recommendations: {
+    heading: 'המלצות רכבים',
+    loading: 'טוען המלצות…',
+    empty: 'לא נמצאו רכבים ברדיוס 20 ק״מ ב-4 הימים הקרובים',
+    clearSearch: 'נקה חיפוש',
   },
 
   units: { km: 'ק״מ', m: 'מ׳', min: 'דק׳', hour: 'שע׳' },

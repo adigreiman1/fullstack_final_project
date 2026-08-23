@@ -1,13 +1,15 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Language, getDictionary, DEFAULT_LANGUAGE, LANGUAGE_COOKIE } from '@/lib/i18n';
+import { Language, getDictionary, DEFAULT_LANGUAGE, LANGUAGE_COOKIE, directionOf, localeOf } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: ReturnType<typeof getDictionary>;
+  locale: string;
+  direction: 'ltr' | 'rtl';
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -32,7 +34,9 @@ export function LanguageProvider({
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t }}>
+    <LanguageContext.Provider
+      value={{ language, setLanguage: handleSetLanguage, t, locale: localeOf(language), direction: directionOf(language) }}
+    >
       {children}
     </LanguageContext.Provider>
   );
