@@ -2,21 +2,29 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { MAPBOX_TOKEN } from '@/lib/mapbox-optimization';
-
 export interface GeocodedLocation {
   lat: number;
   lng: number;
   address: string;
 }
 
-interface Suggestion extends GeocodedLocation {
+/** An Autocomplete prediction — no coordinates yet, those need a Place Details call. */
+interface Suggestion {
+  id: string;
+  address: string;
+}
+
+interface RecentSearch extends GeocodedLocation {
   id: string;
 }
 
 /** Only the fields we read, so a shape change fails loudly here and not deep in the UI. */
-interface GeocodingResponse {
-  features?: { id?: string; place_name?: string; center?: [number, number] }[];
+interface AutocompleteResponse {
+  suggestions?: { placePrediction?: { placeId?: string; text?: { text?: string } } }[];
+}
+
+interface PlaceDetailsResponse {
+  location?: { latitude?: number; longitude?: number };
 }
 
 interface AddressSearchProps {
@@ -25,49 +33,99 @@ interface AddressSearchProps {
   draftLocation: GeocodedLocation | null;
 }
 
-const GEOCODING_ENDPOINT = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
+const AUTOCOMPLETE_ENDPOINT = 'https://places.googleapis.com/v1/places:autocomplete';
+const PLACE_DETAILS_ENDPOINT = 'https://places.googleapis.com/v1/places';
+
+const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 const RECENT_SEARCHES_KEY = 'smd:recentAddressSearches';
 const RECENT_SEARCHES_LIMIT = 5;
 
-function loadRecentSearches(): Suggestion[] {
+function loadRecentSearches(): RecentSearch[] {
   try {
     const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Suggestion[]) : [];
+    const parsed = raw ? (JSON.parse(raw) as RecentSearch[]) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
-/** Floating, debounced address search that geocodes via the Mapbox Places API. */
+/** Resolves the lat/lng for a place prediction via the Places API (New) Place Details endpoint. */
+async function fetchPlaceLocation(
+  placeId: string,
+  signal: AbortSignal,
+): Promise<{ lat: number; lng: number } | null> {
+  const response = await fetch(`${PLACE_DETAILS_ENDPOINT}/${placeId}`, {
+    signal,
+    headers: {
+      'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+      'X-Goog-FieldMask': 'location',
+    },
+  });
+  const data = (await response.json()) as PlaceDetailsResponse;
+  const { latitude, longitude } = data.location ?? {};
+  if (typeof latitude !== 'number' || typeof longitude !== 'number') return null;
+  return { lat: latitude, lng: longitude };
+}
+
+/** Floating, debounced address search that autocompletes via the Google Places API (New). */
 export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [recentSearches, setRecentSearches] = useState<Suggestion[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   /** Selecting a suggestion sets `query` to its address, which would otherwise
    *  re-trigger this effect and reopen the dropdown with a fresh search. */
   const justSelected = useRef(false);
+  /** Pairs one Autocomplete session with its resolving Place Details call, per
+   *  Google's session-token billing model; a fresh token starts after each resolution. */
+  const sessionToken = useRef(crypto.randomUUID());
 
   useEffect(() => {
     setRecentSearches(loadRecentSearches());
   }, []);
 
-  function selectSuggestion(suggestion: Suggestion) {
+  function rememberSearch(location: RecentSearch) {
+    setRecentSearches((current) => {
+      const deduped = current.filter((entry) => entry.address !== location.address);
+      const updated = [location, ...deduped].slice(0, RECENT_SEARCHES_LIMIT);
+      try {
+        window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+      } catch {
+        // Storage can be unavailable (private browsing, quota) — recent searches just won't persist.
+      }
+      return updated;
+    });
+  }
+
+  function selectRecent(recent: RecentSearch) {
     justSelected.current = true;
-    onSelect(suggestion);
+    onSelect(recent);
+    setQuery(recent.address);
+    setSuggestions([]);
+    rememberSearch(recent);
+  }
+
+  async function selectSuggestion(suggestion: Suggestion) {
+    justSelected.current = true;
     setQuery(suggestion.address);
     setSuggestions([]);
 
-    const deduped = recentSearches.filter((entry) => entry.address !== suggestion.address);
-    const updated = [suggestion, ...deduped].slice(0, RECENT_SEARCHES_LIMIT);
-    setRecentSearches(updated);
+    const controller = new AbortController();
+    let location: { lat: number; lng: number } | null;
     try {
-      window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+      location = await fetchPlaceLocation(suggestion.id, controller.signal);
     } catch {
-      // Storage can be unavailable (private browsing, quota) — recent searches just won't persist.
+      location = null;
     }
+    // A new Autocomplete session starts once this one has been resolved to a place.
+    sessionToken.current = crypto.randomUUID();
+    if (!location) return;
+
+    const resolved: RecentSearch = { id: suggestion.id, address: suggestion.address, ...location };
+    onSelect(resolved);
+    rememberSearch(resolved);
   }
 
   // "Clear Search" nulls draftLocation in the parent; the input has to follow.
@@ -82,36 +140,40 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
     }
 
     const trimmed = query.trim();
-    if (trimmed.length < 3 || !MAPBOX_TOKEN) {
+    if (trimmed.length < 3 || !GOOGLE_PLACES_API_KEY) {
       setSuggestions([]);
       return;
     }
 
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      const params = new URLSearchParams({
-        access_token: MAPBOX_TOKEN,
-        country: 'il',
-        language: 'he',
-        autocomplete: 'true',
-      });
-
       try {
-        const response = await fetch(
-          `${GEOCODING_ENDPOINT}/${encodeURIComponent(trimmed)}.json?${params.toString()}`,
-          { signal: controller.signal },
-        );
-        const data = (await response.json()) as GeocodingResponse;
+        const response = await fetch(AUTOCOMPLETE_ENDPOINT, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+            'X-Goog-FieldMask':
+              'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text',
+          },
+          body: JSON.stringify({
+            input: trimmed,
+            languageCode: 'he',
+            includedRegionCodes: ['il'],
+            sessionToken: sessionToken.current,
+          }),
+        });
+        const data = (await response.json()) as AutocompleteResponse;
 
         setSuggestions(
-          (data.features ?? [])
-            .filter((feature) => feature.id && feature.place_name && feature.center)
-            .map((feature) => ({
-              id: feature.id!,
-              address: feature.place_name!,
-              lng: feature.center![0],
-              lat: feature.center![1],
-            })),
+          (data.suggestions ?? [])
+            .map((entry) => entry.placePrediction)
+            .filter(
+              (prediction): prediction is { placeId: string; text: { text: string } } =>
+                Boolean(prediction?.placeId && prediction?.text?.text),
+            )
+            .map((prediction) => ({ id: prediction.placeId, address: prediction.text.text })),
         );
       } catch {
         if (!controller.signal.aborted) setSuggestions([]);
@@ -158,7 +220,7 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
               <button
                 type="button"
                 className="block w-full truncate px-3 py-2 text-start text-sm hover:bg-[#f9f9f7]"
-                onClick={() => selectSuggestion(suggestion)}
+                onClick={() => void selectSuggestion(suggestion)}
               >
                 {suggestion.address.replace(/, ישראל|, Israel/g, '')}
               </button>
@@ -170,15 +232,15 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
           <li className="px-3 pt-2 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
             חיפושים אחרונים
           </li>
-          {recentSearches.map((suggestion) => (
-            <li key={suggestion.id}>
+          {recentSearches.map((recent) => (
+            <li key={recent.id}>
               <button
                 type="button"
                 className="block w-full truncate px-3 py-2 text-start text-sm hover:bg-[#f9f9f7]"
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={() => selectSuggestion(suggestion)}
+                onClick={() => selectRecent(recent)}
               >
-                {suggestion.address.replace(/, ישראל|, Israel/g, '')}
+                {recent.address.replace(/, ישראל|, Israel/g, '')}
               </button>
             </li>
           ))}

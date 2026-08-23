@@ -79,5 +79,7 @@ so the app only ever selects from it. Key columns: `vehicle_id`, `lat`/`lng`,
 npm run dev
 ```
 
-Requires `.env.local` with Supabase credentials and
-`NEXT_PUBLIC_MAPBOX_TOKEN` (a public, URL-restricted Mapbox token).
+Requires `.env.local` with Supabase credentials, `NEXT_PUBLIC_MAPBOX_TOKEN`
+(a public, URL-restricted Mapbox token) for map rendering, and
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (a public, HTTP-referrer-restricted key with
+the Places API enabled) for address autocomplete.
