@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { useI18n } from '@/components/LanguageProvider';
 import { MAPBOX_TOKEN } from '@/lib/mapbox-optimization';
 
 export interface GeocodedLocation {
@@ -28,14 +27,48 @@ interface AddressSearchProps {
 
 const GEOCODING_ENDPOINT = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
 
+const RECENT_SEARCHES_KEY = 'smd:recentAddressSearches';
+const RECENT_SEARCHES_LIMIT = 5;
+
+function loadRecentSearches(): Suggestion[] {
+  try {
+    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Suggestion[]) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Floating, debounced address search that geocodes via the Mapbox Places API. */
 export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
-  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [recentSearches, setRecentSearches] = useState<Suggestion[]>([]);
+  const [isFocused, setIsFocused] = useState(false);
   /** Selecting a suggestion sets `query` to its address, which would otherwise
    *  re-trigger this effect and reopen the dropdown with a fresh search. */
   const justSelected = useRef(false);
+
+  useEffect(() => {
+    setRecentSearches(loadRecentSearches());
+  }, []);
+
+  function selectSuggestion(suggestion: Suggestion) {
+    justSelected.current = true;
+    onSelect(suggestion);
+    setQuery(suggestion.address);
+    setSuggestions([]);
+
+    const deduped = recentSearches.filter((entry) => entry.address !== suggestion.address);
+    const updated = [suggestion, ...deduped].slice(0, RECENT_SEARCHES_LIMIT);
+    setRecentSearches(updated);
+    try {
+      window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    } catch {
+      // Storage can be unavailable (private browsing, quota) — recent searches just won't persist.
+    }
+  }
 
   // "Clear Search" nulls draftLocation in the parent; the input has to follow.
   useEffect(() => {
@@ -111,7 +144,9 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={t.addressSearch.placeholder}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder="חיפוש כתובת..."
           className="w-full rounded-full border border-slate-300 bg-white ps-9 pe-4 py-2.5 text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
       </div>
@@ -123,12 +158,25 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
               <button
                 type="button"
                 className="block w-full truncate px-3 py-2 text-start text-sm hover:bg-[#f9f9f7]"
-                onClick={() => {
-                  justSelected.current = true;
-                  onSelect(suggestion);
-                  setQuery(suggestion.address);
-                  setSuggestions([]);
-                }}
+                onClick={() => selectSuggestion(suggestion)}
+              >
+                {suggestion.address.replace(/, ישראל|, Israel/g, '')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : isFocused && query.trim().length === 0 && recentSearches.length > 0 ? (
+        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-slate-300 bg-white shadow-md">
+          <li className="px-3 pt-2 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400">
+            חיפושים אחרונים
+          </li>
+          {recentSearches.map((suggestion) => (
+            <li key={suggestion.id}>
+              <button
+                type="button"
+                className="block w-full truncate px-3 py-2 text-start text-sm hover:bg-[#f9f9f7]"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectSuggestion(suggestion)}
               >
                 {suggestion.address.replace(/, ישראל|, Israel/g, '')}
               </button>

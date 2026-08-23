@@ -146,26 +146,18 @@ export function boundsOf(tasks: ServiceTask[]): Bounds | null {
 }
 
 /**
- * Unit suffixes come from the dictionary rather than being hard-coded, so a
- * Hebrew route summary reads 'ק״מ' and 'דק׳'. The numbers themselves stay in
+ * Unit suffixes are Hebrew ('ק״מ', 'דק׳'). The numbers themselves stay in
  * Western digits, which is what Israeli dispatchers use.
  */
-export interface UnitLabels {
-  km: string;
-  m: string;
-  min: string;
-  hour: string;
-}
-
-export function formatDistance(meters: number, units: UnitLabels): string {
+export function formatDistance(meters: number): string {
   return meters >= 1000
-    ? `${(meters / 1000).toFixed(1)} ${units.km}`
-    : `${Math.round(meters)} ${units.m}`;
+    ? `${(meters / 1000).toFixed(1)} ק״מ`
+    : `${Math.round(meters)} מ׳`;
 }
 
-export function formatDuration(seconds: number, units: UnitLabels): string {
+export function formatDuration(seconds: number): string {
   const totalMinutes = Math.round(seconds / 60);
-  if (totalMinutes < 60) return `${totalMinutes} ${units.min}`;
+  if (totalMinutes < 60) return `${totalMinutes} דק׳`;
   const hours = Math.floor(totalMinutes / 60);
-  return `${hours} ${units.hour} ${String(totalMinutes % 60).padStart(2, '0')} ${units.min}`;
+  return `${hours} שע׳ ${String(totalMinutes % 60).padStart(2, '0')} דק׳`;
 }

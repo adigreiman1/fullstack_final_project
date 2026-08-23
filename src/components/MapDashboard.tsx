@@ -9,11 +9,9 @@ import { Map, Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox
 
 import { getRecommendations, type Recommendation } from '@/actions/tasks';
 import { AddressSearch } from '@/components/AddressSearch';
-import { useI18n } from '@/components/LanguageProvider';
 import { RouteLayer } from '@/components/RouteLayer';
 import { TaskTooltip } from '@/components/TaskTooltip';
 import { useOptimizedRoutes, type OptimizationRequest } from '@/hooks/useOptimizedRoutes';
-import type { Dictionary } from '@/lib/i18n';
 import { MAPBOX_TOKEN } from '@/lib/mapbox-optimization';
 import {
   boundsOf,
@@ -58,8 +56,15 @@ function emptyDayView(date: string): DayView {
   };
 }
 
+function stopsLabel(count: number): string {
+  return count === 1 ? 'עצירה אחת' : `${count} עצירות`;
+}
+
+function vehiclesLabel(count: number): string {
+  return count === 1 ? 'רכב אחד' : `${count} רכבים`;
+}
+
 export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
-  const { t, language, locale } = useI18n();
   const mapRef = useRef<MapRef | null>(null);
 
   /**
@@ -130,12 +135,12 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
       if (notifiedRouteErrors.current.has(key)) continue;
 
       notifiedRouteErrors.current.add(key);
-      toast.error(t.toasts.routeFailed(vehicleId), {
+      toast.error(`לא ניתן לחשב מסלול עבור ${vehicleId} — מוצגות עצירות בלבד.`, {
         id: `route-error-${key}`,
         duration: 6000,
       });
     }
-  }, [routes, date, t]);
+  }, [routes, date]);
 
   /** The data-layer failure from getDailyTasks() is worth a toast as well as the inline note. */
   useEffect(() => {
@@ -249,7 +254,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   }, [mapLoaded, date, draftLocation]);
 
   /**
-   * Basemap labels follow the UI language.
+   * Basemap labels are set to Hebrew once the map loads.
    *
    * mapbox-gl v3 has setLanguage built in — it swaps every symbol layer's
    * text-field to the matching `name_xx` field — so the old mapbox-gl-language
@@ -264,13 +269,13 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     if (!map) return;
 
     try {
-      map.setLanguage(language);
+      map.setLanguage('he');
     } catch (error) {
       // Not worth a toast: the map is fully usable, just labelled in the
       // style's default language.
       console.warn('[MapDashboard] Could not localise basemap labels:', error);
     }
-  }, [mapLoaded, language]);
+  }, [mapLoaded]);
 
   const toggleVehicle = useCallback(
     (vehicleId: string) => {
@@ -331,7 +336,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     return (
       <main className="flex flex-1 items-center justify-center px-8 py-10">
         <p role="alert" className="max-w-md rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-          {t.sidebar.missingToken}
+          חסר NEXT_PUBLIC_MAPBOX_TOKEN. יש להוסיף אותו לקובץ ‎.env.local ולהפעיל מחדש את שרת הפיתוח — ‏Next.js קורא קובצי סביבה רק בעת העלייה.
         </p>
       </main>
     );
@@ -350,10 +355,10 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
 
         <div className="flex flex-col gap-1">
           <h2 className="text-[13px] font-semibold tracking-wide text-indigo-900 uppercase">
-            {t.sidebar.heading}
+            מסלולים
           </h2>
           <p className="text-xs text-[#52514e] tabular-nums">
-            {date} · {t.sidebar.stops(totalStops)} · {t.sidebar.vehicles(vehicleCount)}
+            {date} · {stopsLabel(totalStops)} · {vehiclesLabel(vehicleCount)}
           </p>
         </div>
 
@@ -365,7 +370,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
 
         {groups.length === 0 && !loadError ? (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            {t.sidebar.noTasks(date)}
+            {`אין משימות מתוזמנות לתאריך ${date}. אפשר לדפדף בעזרת החיצים או לוח השנה בכותרת.`}
           </p>
         ) : null}
 
@@ -379,19 +384,21 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
               onClick={clearDraftLocation}
               className="shrink-0 text-[11px] text-[#898781] underline"
             >
-              {t.recommendations.clearSearch}
+              נקה חיפוש
             </button>
           </div>
         ) : null}
 
         {draftLocation ? (
           <div className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm">
-            <h3 className="text-xs font-semibold text-slate-800">{t.recommendations.heading}</h3>
+            <h3 className="text-xs font-semibold text-slate-800">המלצות רכבים</h3>
 
             {recommendationsLoading ? (
-              <p className="text-[11px] text-[#898781]">{t.recommendations.loading}</p>
+              <p className="text-[11px] text-[#898781]">טוען המלצות…</p>
             ) : recommendations.length === 0 ? (
-              <p className="text-[11px] text-[#52514e]">{t.recommendations.empty}</p>
+              <p className="text-[11px] text-[#52514e]">
+                לא נמצאו רכבים ברדיוס 20 ק״מ ב-4 הימים הקרובים
+              </p>
             ) : (
               <ul className="flex max-h-64 flex-col gap-1.5 overflow-y-auto">
                 {recommendations.map((rec) => (
@@ -402,11 +409,11 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
                       className="w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-start text-[11px] transition-colors hover:bg-slate-100"
                     >
                       <div className="flex items-center justify-between tabular-nums">
-                        <span>{formatFullDate(rec.task.scheduled_date, locale)}</span>
-                        <span>{rec.distanceKm.toFixed(1)} {t.units.km}</span>
+                        <span>{formatFullDate(rec.task.scheduled_date)}</span>
+                        <span>{rec.distanceKm.toFixed(1)} ק״מ</span>
                       </div>
                       <div className="font-bold text-indigo-900">
-                        {rec.task.installer_name ?? t.tooltip.unassignedInstaller}
+                        {rec.task.installer_name ?? 'לא משויך'}
                       </div>
                       <div className="text-[#52514e]">{rec.task.time_window ?? '—'}</div>
                     </button>
@@ -429,7 +436,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
               hidden={view.hiddenVehicles.has(group.vehicleId)}
               focused={view.focusedVehicle === group.vehicleId}
               activeTaskId={activeTaskId}
-              t={t}
               onToggle={() => toggleVehicle(group.vehicleId)}
               onFocus={() => focusVehicle(group.vehicleId)}
               onBlur={() => focusVehicle(null)}
@@ -585,7 +591,6 @@ interface VehicleLegendRowProps {
   hidden: boolean;
   focused: boolean;
   activeTaskId: string | null;
-  t: Dictionary;
   onToggle: () => void;
   onFocus: () => void;
   onBlur: () => void;
@@ -598,7 +603,6 @@ function VehicleLegendRow({
   hidden,
   focused,
   activeTaskId,
-  t,
   onToggle,
   onFocus,
   onBlur,
@@ -634,25 +638,25 @@ function VehicleLegendRow({
         <span className="flex flex-col">
           <span className="font-mono text-lg font-bold text-indigo-900">{installerName}</span>
           <span className="text-[11px] text-[#52514e] tabular-nums">
-            {t.sidebar.stops(group.tasks.length)}
+            {stopsLabel(group.tasks.length)}
             {route?.status === 'ready' && route.distanceMeters !== null
-              ? ` · ${formatDistance(route.distanceMeters, t.units)}`
+              ? ` · ${formatDistance(route.distanceMeters)}`
               : ''}
           </span>
         </span>
         <span className="ms-auto text-[10px] font-medium tracking-wide text-[#898781] uppercase">
-          {hidden ? t.sidebar.hidden : t.sidebar.shown}
+          {hidden ? 'מוסתר' : 'מוצג'}
         </span>
       </button>
 
       {route?.status === 'loading' ? (
-        <p className="px-3 pb-2 text-[11px] text-[#898781]">{t.sidebar.optimising}</p>
+        <p className="px-3 pb-2 text-[11px] text-[#898781]">מחשב מסלול…</p>
       ) : null}
 
       {route?.status === 'error' ? (
         // Markers stay on the map; only the drawn route is missing.
         <p className="px-3 pb-2 text-[11px] text-[#d03b3b]">
-          {t.sidebar.routeUnavailable}{' '}
+          המסלול אינו זמין — מוצגות עצירות בלבד.{' '}
           {/* The API's own message stays untranslated on purpose: it is a
               verbatim upstream diagnostic, not UI copy. */}
           <span dir="ltr">{route.error}</span>
@@ -661,13 +665,15 @@ function VehicleLegendRow({
 
       {group.overflowTasks.length > 0 ? (
         <p className="px-3 pb-2 text-[11px] text-[#52514e]">
-          {t.sidebar.overflowStops(group.overflowTasks.length, MAX_OPTIMIZATION_COORDINATES)}
+          {`${stopsLabel(group.overflowTasks.length)} מעבר למגבלת ${MAX_OPTIMIZATION_COORDINATES} הנקודות של Mapbox — מוצגות כסימונים בלבד, ללא מסלול.`}
         </p>
       ) : null}
 
       {group.invalidTasks.length > 0 ? (
         <p className="px-3 pb-2 text-[11px] text-[#d03b3b]">
-          {t.sidebar.invalidStops(group.invalidTasks.length)}
+          {group.invalidTasks.length === 1
+            ? 'לעצירה אחת אין קואורדינטות תקינות.'
+            : `ל־${group.invalidTasks.length} עצירות אין קואורדינטות תקינות.`}
         </p>
       ) : null}
 

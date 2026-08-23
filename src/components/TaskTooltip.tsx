@@ -2,7 +2,6 @@
 
 import { Popup } from 'react-map-gl/mapbox';
 
-import { useI18n } from '@/components/LanguageProvider';
 import type { ServiceTask } from '@/types/schema';
 
 interface DetailRow {
@@ -37,24 +36,22 @@ export function TaskTooltip({
   pendingOptimization,
   onClose,
 }: TaskTooltipProps) {
-  const { t } = useI18n();
-
   // Order matches the spec: plate, contact, phone, address, window, note.
   const detailRows: DetailRow[] = [
-    // Plate numbers, phone numbers and time windows stay LTR even in a Hebrew
-    // layout: they read left-to-right, and inheriting RTL reorders the digits.
-    { label: t.tooltip.carPlate, value: task.car_plate ?? '', dir: 'ltr' },
+    // Plate numbers, phone numbers and time windows stay LTR even in the
+    // Hebrew layout: they read left-to-right, and inheriting RTL reorders the digits.
+    { label: 'מספר רכב', value: task.car_plate ?? '', dir: 'ltr' },
     // service_tasks has no vehicle-type column yet; assumed field name is
     // `vehicle_type` — falls back to a placeholder until SAP mirrors it.
     {
-      label: t.tooltip.vehicleType,
-      value: (task as { vehicle_type?: string }).vehicle_type ?? t.tooltip.vehicleTypePlaceholder,
+      label: 'סוג רכב',
+      value: (task as { vehicle_type?: string }).vehicle_type ?? 'מסחרית',
     },
-    { label: t.tooltip.contact, value: task.customer_name ?? '' },
-    { label: t.tooltip.phone, value: task.customer_phone ?? '', dir: 'ltr' },
-    { label: t.tooltip.address, value: task.address },
-    { label: t.tooltip.timeWindow, value: task.time_window ?? '', dir: 'ltr' },
-    { label: t.tooltip.note, value: task.short_note ?? '' },
+    { label: 'איש קשר', value: task.customer_name ?? '' },
+    { label: 'טלפון', value: task.customer_phone ?? '', dir: 'ltr' },
+    { label: 'כתובת', value: task.address },
+    { label: 'חלון זמן', value: task.time_window ?? '', dir: 'ltr' },
+    { label: 'הערה', value: task.short_note ?? '' },
   ];
 
   // Every SAP column is nullable in the mirror, so an absent field drops its row
@@ -83,14 +80,14 @@ export function TaskTooltip({
             style={{ backgroundColor: color }}
           />
           <span className="text-[13px] leading-snug font-semibold text-indigo-900">
-            {task.installer_name?.trim() || t.tooltip.unassignedInstaller}
+            {task.installer_name?.trim() || 'לא משויך'}
           </span>
           <span className="ms-auto shrink-0 text-[11px] text-[#898781]">
             {stopNumber !== null
-              ? t.tooltip.stop(stopNumber)
+              ? `עצירה ${stopNumber}`
               : pendingOptimization
-                ? t.tooltip.optimising
-                : t.tooltip.unrouted}
+                ? 'מחשב…'
+                : 'ללא מסלול'}
           </span>
         </div>
 

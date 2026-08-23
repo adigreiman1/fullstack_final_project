@@ -95,17 +95,19 @@ export function monthGrid(value: string): CalendarDay[] {
 }
 
 /*
- * Formatters take an explicit BCP 47 locale rather than defaulting to the
- * runtime's: the dashboard's language is a user choice, and on the server the
- * runtime locale is the machine's, which is nobody's preference.
+ * Formatters are locked to he-IL rather than the runtime's locale: the
+ * dashboard is Hebrew-only, and on the server the runtime locale is the
+ * machine's, which is nobody's preference.
  *
  * timeZone: 'UTC' throughout, because these values are UTC-midnight stand-ins for
  * calendar dates — formatting them in any other zone can print the day before.
  */
 
-/** 'Thu, 13 Aug 2026' / 'יום ה׳, 13 באוג׳ 2026' — the header's primary label. */
-export function formatFullDate(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
+const LOCALE = 'he-IL';
+
+/** 'יום ה׳, 13 באוג׳ 2026' — the header's primary label. */
+export function formatFullDate(value: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
     timeZone: 'UTC',
     weekday: 'short',
     day: 'numeric',
@@ -114,9 +116,9 @@ export function formatFullDate(value: string, locale: string): string {
   }).format(fromIsoDate(value));
 }
 
-/** 'August 2026' / 'אוגוסט 2026' — the calendar dropdown's month heading. */
-export function formatMonthYear(value: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
+/** 'אוגוסט 2026' — the calendar dropdown's month heading. */
+export function formatMonthYear(value: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
     timeZone: 'UTC',
     month: 'long',
     year: 'numeric',
@@ -130,9 +132,9 @@ export function formatMonthYear(value: string, locale: string): string {
  * all begin with the same word ('יום ראשון', 'יום שני'), so slicing would print
  * seven identical columns. Narrow gives 'א', 'ב', 'ג' as intended.
  */
-export function weekdayInitials(locale: string): { key: string; label: string; full: string }[] {
-  const narrow = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: 'narrow' });
-  const long = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: 'long' });
+export function weekdayInitials(): { key: string; label: string; full: string }[] {
+  const narrow = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'narrow' });
+  const long = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'long' });
 
   // 2026-08-02 is a Sunday, used purely as a known week start.
   return Array.from({ length: 7 }, (_, index) => {

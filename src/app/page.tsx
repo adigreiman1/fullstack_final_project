@@ -1,10 +1,7 @@
 import { signOut } from '@/actions/auth';
 import { getDailyTasks } from '@/actions/tasks';
 import { DatePicker } from '@/components/DatePicker';
-import { LanguageToggle } from '@/components/LanguageToggle';
 import { MapDashboard } from '@/components/MapDashboard';
-import { getDictionary } from '@/lib/i18n';
-import { getLanguage } from '@/lib/language-server';
 import { isIsoDate, todayInServiceTimezone } from '@/lib/utils';
 
 /**
@@ -17,11 +14,6 @@ import { isIsoDate, todayInServiceTimezone } from '@/lib/utils';
  */
 export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const { date: requestedDate } = await searchParams;
-
-  // The dictionary is plain data, so the shell's strings are translated on the
-  // server — no client component needed just to render a heading.
-  const language = await getLanguage();
-  const t = getDictionary(language);
 
   const today = todayInServiceTimezone();
   // A hand-edited or stale ?date= must not reach the query as a Postgres date
@@ -37,19 +29,17 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
         />
-        <h1 className="text-xl font-bold tracking-tight text-indigo-900">{t.header.title}</h1>
+        <h1 className="text-xl font-bold tracking-tight text-indigo-900">מסלולי שירות יומיים</h1>
 
         <DatePicker date={date} today={today} />
 
         <div className="flex items-center gap-2">
-          <LanguageToggle />
-
           <form action={signOut}>
             <button
               type="submit"
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
             >
-              {t.header.signOut}
+              התנתקות
             </button>
           </form>
         </div>

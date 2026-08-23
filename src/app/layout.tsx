@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { Geist_Mono, Heebo } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 
-import { LanguageProvider } from "@/components/LanguageProvider";
-import { directionOf } from "@/lib/i18n";
-import { getLanguage } from "@/lib/language-server";
 import "./globals.css";
 
 const heebo = Heebo({
@@ -22,19 +19,15 @@ export const metadata: Metadata = {
   description: "Daily service tasks and optimised vehicle routes.",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  // Read on the server so the first HTML is already in the right language and
-  // direction — a client-only preference would render LTR and flip after hydration.
-  const language = await getLanguage();
-
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang={language}
-      dir={directionOf(language)}
+      lang="he"
+      dir="rtl"
       className={`${heebo.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <LanguageProvider initialLanguage={language}>{children}</LanguageProvider>
+        {children}
         {/* Mounted once here so any component can call toast.error(...). The
             dashboard is read-only, so the only notifications are failures it
             cannot fix itself: the Optimization API fallback and a daily-task load

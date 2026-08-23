@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 
-import { useI18n } from '@/components/LanguageProvider';
 import {
   addDays,
   addMonths,
@@ -11,6 +10,7 @@ import {
   formatMonthYear,
   monthGrid,
   relativeDay,
+  type RelativeDay,
   weekdayInitials,
 } from '@/lib/utils';
 
@@ -31,7 +31,6 @@ interface DatePickerProps {
  * the pending state instead of a spinner over the map.
  */
 export function DatePicker({ date, today }: DatePickerProps) {
-  const { t, locale, direction } = useI18n();
   const router = useRouter();
   const [isPending, startNavigation] = useTransition();
 
@@ -98,45 +97,39 @@ export function DatePicker({ date, today }: DatePickerProps) {
     cell?.focus();
   }, [open, cursor]);
 
-  const onGridKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      // Horizontal keys follow the visual direction: in an RTL grid the previous
-      // day sits to the right, so ArrowRight has to move backwards. Vertical keys
-      // are unaffected — weeks run top to bottom in both directions.
-      const back = direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
-      const forward = direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+  const onGridKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Horizontal keys follow the visual direction: in this RTL grid the previous
+    // day sits to the right, so ArrowRight has to move backwards. Vertical keys
+    // are unaffected — weeks run top to bottom regardless of direction.
+    const moves: Record<string, number> = {
+      ArrowRight: -1,
+      ArrowLeft: 1,
+      ArrowUp: -7,
+      ArrowDown: 7,
+    };
 
-      const moves: Record<string, number> = {
-        [back]: -1,
-        [forward]: 1,
-        ArrowUp: -7,
-        ArrowDown: 7,
-      };
+    const step = moves[event.key];
+    if (step !== undefined) {
+      event.preventDefault();
+      setCursor((current) => addDays(current, step));
+      return;
+    }
 
-      const step = moves[event.key];
-      if (step !== undefined) {
-        event.preventDefault();
-        setCursor((current) => addDays(current, step));
-        return;
-      }
-
-      if (event.key === 'PageUp' || event.key === 'PageDown') {
-        event.preventDefault();
-        setCursor((current) => addMonths(current, event.key === 'PageUp' ? -1 : 1));
-      }
-    },
-    [direction],
-  );
+    if (event.key === 'PageUp' || event.key === 'PageDown') {
+      event.preventDefault();
+      setCursor((current) => addMonths(current, event.key === 'PageUp' ? -1 : 1));
+    }
+  }, []);
 
   const relativeKey = relativeDay(date, today);
   const days = monthGrid(cursor);
-  const weekdays = weekdayInitials(locale);
+  const weekdays = weekdayInitials();
 
   return (
     <div className="flex items-center gap-2">
       <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-300 bg-slate-50 p-0.5 shadow-sm">
       <NavButton
-        label={t.datePicker.previousDay}
+        label="היום הקודם"
         direction="back"
         disabled={isPending}
         onClick={() => goToDate(addDays(date, -1))}
@@ -154,9 +147,11 @@ export function DatePicker({ date, today }: DatePickerProps) {
           <span aria-hidden className="text-slate-400">
             ▤
           </span>
-          <span className="tabular-nums">{formatFullDate(date, locale)}</span>
+          <span className="tabular-nums">{formatFullDate(date)}</span>
           {relativeKey ? (
-            <span className="text-xs font-normal text-slate-400">{t.datePicker[relativeKey]}</span>
+            <span className="text-xs font-normal text-slate-400">
+              {RELATIVE_DAY_LABELS[relativeKey]}
+            </span>
           ) : null}
         </button>
 
@@ -164,20 +159,20 @@ export function DatePicker({ date, today }: DatePickerProps) {
           <div
             ref={popoverRef}
             role="dialog"
-            aria-label={t.datePicker.chooseDate}
+            aria-label="בחירת תאריך"
             className="absolute top-full left-1/2 z-20 mt-2 w-[268px] -translate-x-1/2 rounded-lg border border-slate-300 bg-white p-3 shadow-[0_10px_30px_rgba(11,11,11,0.14)]"
           >
             <div className="mb-2 flex items-center justify-between">
               <NavButton
-                label={t.datePicker.previousMonth}
+                label="החודש הקודם"
                 direction="back"
                 onClick={() => setCursor((current) => addMonths(current, -1))}
               />
               <span aria-live="polite" className="text-sm font-medium text-[#0b0b0b]">
-                {formatMonthYear(cursor, locale)}
+                {formatMonthYear(cursor)}
               </span>
               <NavButton
-                label={t.datePicker.nextMonth}
+                label="החודש הבא"
                 direction="forward"
                 onClick={() => setCursor((current) => addMonths(current, 1))}
               />
@@ -213,7 +208,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
                         tabIndex={day.date === cursor ? 0 : -1}
                         aria-selected={isSelected}
                         aria-current={isToday ? 'date' : undefined}
-                        aria-label={formatFullDate(day.date, locale)}
+                        aria-label={formatFullDate(day.date)}
                         onClick={() => goToDate(day.date)}
                         className={`mx-auto grid size-8 place-items-center rounded-full text-[12px] tabular-nums transition-colors ${
                           isSelected
@@ -237,7 +232,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
                 onClick={() => goToDate(today)}
                 className="rounded-md px-2 py-1 text-xs font-medium text-[#2a78d6] transition-colors hover:bg-[#f0efec]"
               >
-                {t.datePicker.jumpToToday}
+                מעבר להיום
               </button>
             </div>
           </div>
@@ -245,7 +240,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
       </div>
 
       <NavButton
-        label={t.datePicker.nextDay}
+        label="היום הבא"
         direction="forward"
         disabled={isPending}
         onClick={() => goToDate(addDays(date, 1))}
@@ -258,7 +253,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
           onClick={() => goToDate(today)}
           className="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-all hover:bg-white hover:shadow-sm disabled:opacity-60"
         >
-          {t.datePicker.today}
+          היום
         </button>
       )}
       </div>
@@ -272,11 +267,17 @@ export function DatePicker({ date, today }: DatePickerProps) {
           isPending ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {t.datePicker.loading}
+        טוען…
       </span>
     </div>
   );
 }
+
+const RELATIVE_DAY_LABELS: Record<RelativeDay, string> = {
+  today: 'היום',
+  yesterday: 'אתמול',
+  tomorrow: 'מחר',
+};
 
 function NavButton({
   label,
