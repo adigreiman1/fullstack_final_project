@@ -45,7 +45,7 @@ export const VEHICLE_DASH_ARRAYS: (readonly number[] | undefined)[] = [
 
 /** Chrome tokens shared by the map, legend and tooltip. */
 export const MAP_SURFACE = '#f8f4f0';
-export const MAP_STYLE_URL = 'mapbox://styles/mapbox/light-v11';
+export const MAP_STYLE_URL = "mapbox://styles/adigreiman/cmt5xty3f00aj01s3fdn6f2rp";
 
 export interface VehicleGroup {
   vehicleId: string;

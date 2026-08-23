@@ -354,7 +354,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         <AddressSearch onSelect={setDraftLocation} draftLocation={draftLocation} />
 
         <div className="flex flex-col gap-1">
-          <h2 className="text-[13px] font-semibold tracking-wide text-indigo-900 uppercase">
+          <h2 className="text-[13px] font-semibold tracking-wide text-deep-blue uppercase">
             מסלולים
           </h2>
           <p className="text-xs text-[#52514e] tabular-nums">
@@ -375,8 +375,8 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         ) : null}
 
         {draftLocation ? (
-          <div className="flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm">
-            <span className="truncate text-xs font-medium text-slate-800">
+          <div className="flex items-center justify-between rounded-xl border border-slate-300 bg-gradient-to-br from-white to-lilac-bg px-3 py-2 shadow-sm">
+            <span className="truncate text-xs font-medium text-deep-blue">
               {draftLocation.address}
             </span>
             <button
@@ -390,8 +390,8 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         ) : null}
 
         {draftLocation ? (
-          <div className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm">
-            <h3 className="text-xs font-semibold text-slate-800">המלצות רכבים</h3>
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-gradient-to-br from-white to-lilac-bg p-3 shadow-sm">
+            <h3 className="text-xs font-semibold text-deep-blue">המלצות רכבים</h3>
 
             {recommendationsLoading ? (
               <p className="text-[11px] text-[#898781]">טוען המלצות…</p>
@@ -412,7 +412,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
                         <span>{formatFullDate(rec.task.scheduled_date)}</span>
                         <span>{rec.distanceKm.toFixed(1)} ק״מ</span>
                       </div>
-                      <div className="font-bold text-indigo-900">
+                      <div className="font-bold text-deep-blue">
                         {rec.task.installer_name ?? 'לא משויך'}
                       </div>
                       <div className="text-[#52514e]">{rec.task.time_window ?? '—'}</div>
@@ -622,7 +622,7 @@ function VehicleLegendRow({
 
   return (
     <li
-      className={`rounded-xl border border-slate-300 bg-white shadow-sm transition-shadow ${
+      className={`rounded-xl border border-slate-300 bg-gradient-to-br from-white to-lilac-bg shadow-sm transition-shadow ${
         focused ? 'shadow-md' : ''
       } ${hidden ? 'opacity-55' : ''}`}
       onMouseEnter={onFocus}
@@ -636,7 +636,7 @@ function VehicleLegendRow({
       >
         <DashPreview color={group.color} dashArray={group.dashArray} muted={hidden} />
         <span className="flex flex-col">
-          <span className="font-mono text-lg font-bold text-indigo-900">{installerName}</span>
+          <span className="font-mono text-lg font-bold text-deep-blue">{installerName}</span>
           <span className="text-[11px] text-[#52514e] tabular-nums">
             {stopsLabel(group.tasks.length)}
             {route?.status === 'ready' && route.distanceMeters !== null
@@ -691,7 +691,7 @@ function VehicleLegendRow({
                 disabled={!routable}
                 onClick={() => onSelectTask(task)}
                 className={`flex w-full min-w-0 items-baseline gap-2 px-3 py-1.5 text-start text-[11px] transition-colors hover:bg-[#f9f9f7] disabled:cursor-not-allowed disabled:opacity-60 ${
-                  activeTaskId === task.id ? 'bg-[#f0efec]' : ''
+                  activeTaskId === task.id ? 'bg-dusty-pink' : ''
                 }`}
               >
                 <span
@@ -700,7 +700,7 @@ function VehicleLegendRow({
                 >
                   {stopNumber}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[#0b0b0b]">{task.address}</span>
+                <span className="min-w-0 flex-1 truncate text-deep-blue">{task.address}</span>
                 {task.time_window ? (
                   <span className="shrink-0 text-[#52514e] tabular-nums">
                     {task.time_window}

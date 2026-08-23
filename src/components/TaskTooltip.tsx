@@ -72,14 +72,14 @@ export function TaskTooltip({
       maxWidth="288px"
       className="task-tooltip"
     >
-      <div className="flex flex-col gap-2 px-3 py-2.5">
+      <div className="flex flex-col gap-2 bg-gradient-to-br from-white to-lilac-bg px-3 py-2.5">
         <div className="flex items-center gap-2">
           <span
             aria-hidden
             className="size-2.5 shrink-0 rounded-full ring-2 ring-white"
             style={{ backgroundColor: color }}
           />
-          <span className="text-[13px] leading-snug font-semibold text-indigo-900">
+          <span className="text-[13px] leading-snug font-semibold text-deep-blue">
             {task.installer_name?.trim() || 'לא משויך'}
           </span>
           <span className="ms-auto shrink-0 text-[11px] text-[#898781]">
@@ -97,7 +97,7 @@ export function TaskTooltip({
               <dt className="text-[#898781]">{row.label}:</dt>
               <dd
                 dir={row.dir}
-                className={`text-[#0b0b0b] ${row.dir === 'ltr' ? 'text-start tabular-nums' : ''}`}
+                className={`text-deep-blue ${row.dir === 'ltr' ? 'text-start tabular-nums' : ''}`}
               >
                 {row.value}
               </dd>

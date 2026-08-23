@@ -10,6 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-heebo);
   --font-mono: var(--font-geist-mono);
+  --color-deep-blue: #1a2035;
+  --color-dusty-pink: #f7f0ff;
+  --color-lilac-bg: #eef4ff;
 }
 
 @media (prefers-color-scheme: dark) {
