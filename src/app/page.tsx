@@ -32,8 +32,12 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-sky-50 px-6 py-3 shadow-sm">
-        <h1 className="text-xl font-bold tracking-tight text-slate-800">{t.header.title}</h1>
+      <header className="relative isolate flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-sky-50 px-6 py-3 shadow-sm">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
+        />
+        <h1 className="text-xl font-bold tracking-tight text-indigo-900">{t.header.title}</h1>
 
         <DatePicker date={date} today={today} />
 
@@ -43,7 +47,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
           <form action={signOut}>
             <button
               type="submit"
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
             >
               {t.header.signOut}
             </button>

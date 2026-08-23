@@ -82,7 +82,7 @@ export function TaskTooltip({
             className="size-2.5 shrink-0 rounded-full ring-2 ring-white"
             style={{ backgroundColor: color }}
           />
-          <span className="text-[13px] leading-snug font-semibold text-[#0b0b0b]">
+          <span className="text-[13px] leading-snug font-semibold text-indigo-900">
             {task.installer_name?.trim() || t.tooltip.unassignedInstaller}
           </span>
           <span className="ms-auto shrink-0 text-[11px] text-[#898781]">

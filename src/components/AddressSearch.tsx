@@ -92,7 +92,7 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
   }, [query]);
 
   return (
-    <div className="absolute start-1/2 top-4 z-10 w-80 -translate-x-1/2">
+    <div className="relative w-full">
       <div className="relative">
         <svg
           viewBox="0 0 24 24"
@@ -112,12 +112,12 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t.addressSearch.placeholder}
-          className="w-full rounded-full border-none bg-white ps-9 pe-4 py-2.5 text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300"
+          className="w-full rounded-full border border-slate-300 bg-white ps-9 pe-4 py-2.5 text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
       </div>
 
       {suggestions.length > 0 ? (
-        <ul className="mt-1 max-h-64 overflow-y-auto rounded-md border border-[#e1e0d9] bg-white shadow-md">
+        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-slate-300 bg-white shadow-md">
           {suggestions.map((suggestion) => (
             <li key={suggestion.id}>
               <button

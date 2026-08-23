@@ -14,7 +14,7 @@ export function LanguageToggle() {
   return (
     <button
       onClick={toggleLanguage}
-      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
     >
       {t.switchTo}
     </button>

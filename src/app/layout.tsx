@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Heebo } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 
 import { LanguageProvider } from "@/components/LanguageProvider";
@@ -7,9 +7,9 @@ import { directionOf } from "@/lib/i18n";
 import { getLanguage } from "@/lib/language-server";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const heebo = Heebo({
+  variable: "--font-heebo",
+  subsets: ["latin", "hebrew"],
 });
 
 const geistMono = Geist_Mono({
@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang={language}
       dir={directionOf(language)}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${heebo.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <LanguageProvider initialLanguage={language}>{children}</LanguageProvider>

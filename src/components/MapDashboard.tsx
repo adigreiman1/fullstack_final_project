@@ -18,7 +18,6 @@ import { MAPBOX_TOKEN } from '@/lib/mapbox-optimization';
 import {
   boundsOf,
   formatDistance,
-  formatDuration,
   groupTasksByVehicle,
   hasValidCoordinates,
   MAP_STYLE_URL,
@@ -311,9 +310,15 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     <div className="flex flex-1 overflow-hidden">
       {/* border-e / ms-* rather than border-r / ml-*: logical properties flip
           with dir="rtl" on their own, physical ones do not. */}
-      <aside className="flex w-[336px] shrink-0 flex-col gap-4 overflow-y-auto border-e border-[#e1e0d9] bg-sky-50 px-5 py-5">
+      <aside className="relative isolate flex w-[336px] shrink-0 flex-col gap-4 overflow-y-auto border-e border-[#e1e0d9] bg-sky-50 px-5 py-5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
+        />
+        <AddressSearch onSelect={setDraftLocation} draftLocation={draftLocation} />
+
         <div className="flex flex-col gap-1">
-          <h2 className="text-[13px] font-semibold tracking-wide text-[#0b0b0b] uppercase">
+          <h2 className="text-[13px] font-semibold tracking-wide text-indigo-900 uppercase">
             {t.sidebar.heading}
           </h2>
           <p className="text-xs text-[#52514e] tabular-nums">
@@ -334,7 +339,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         ) : null}
 
         {draftLocation ? (
-          <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm">
+          <div className="flex items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 shadow-sm">
             <span className="truncate text-xs font-medium text-slate-800">
               {draftLocation.address}
             </span>
@@ -349,7 +354,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         ) : null}
 
         {draftLocation ? (
-          <div className="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-300 bg-white p-3 shadow-sm">
             <h3 className="text-xs font-semibold text-slate-800">{t.recommendations.heading}</h3>
 
             {recommendationsLoading ? (
@@ -363,13 +368,13 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
                     <button
                       type="button"
                       onClick={() => selectRecommendation(rec)}
-                      className="w-full rounded-lg bg-slate-50 px-2 py-1.5 text-start text-[11px] transition-colors hover:bg-slate-100"
+                      className="w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-start text-[11px] transition-colors hover:bg-slate-100"
                     >
                       <div className="flex items-center justify-between tabular-nums">
                         <span>{formatFullDate(rec.task.scheduled_date, locale)}</span>
                         <span>{rec.distanceKm.toFixed(1)} {t.units.km}</span>
                       </div>
-                      <div className="font-bold text-slate-800">
+                      <div className="font-bold text-indigo-900">
                         {rec.task.installer_name ?? t.tooltip.unassignedInstaller}
                       </div>
                       <div className="text-[#52514e]">{rec.task.time_window ?? '—'}</div>
@@ -404,8 +409,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
       </aside>
 
       <div className="relative flex-1">
-        <AddressSearch onSelect={setDraftLocation} draftLocation={draftLocation} />
-
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
@@ -570,6 +573,8 @@ function VehicleLegendRow({
   onBlur,
   onSelectTask,
 }: VehicleLegendRowProps) {
+  const installerName = group.tasks.find((task) => task.installer_name)?.installer_name ?? group.vehicleId;
+
   // Ordered stops read top-to-bottom in drive order once optimisation lands.
   const orderedTasks = useMemo(() => {
     if (!route || route.status !== 'ready') return group.tasks;
@@ -582,7 +587,7 @@ function VehicleLegendRow({
 
   return (
     <li
-      className={`rounded-xl bg-white shadow-sm transition-shadow ${
+      className={`rounded-xl border border-slate-300 bg-white shadow-sm transition-shadow ${
         focused ? 'shadow-md' : ''
       } ${hidden ? 'opacity-55' : ''}`}
       onMouseEnter={onFocus}
@@ -596,14 +601,11 @@ function VehicleLegendRow({
       >
         <DashPreview color={group.color} dashArray={group.dashArray} muted={hidden} />
         <span className="flex flex-col">
-          <span className="font-mono text-lg font-bold text-slate-800">{group.vehicleId}</span>
+          <span className="font-mono text-lg font-bold text-indigo-900">{installerName}</span>
           <span className="text-[11px] text-[#52514e] tabular-nums">
             {t.sidebar.stops(group.tasks.length)}
             {route?.status === 'ready' && route.distanceMeters !== null
-              ? ` · ${formatDistance(route.distanceMeters, t.units)} · ${formatDuration(
-                  route.durationSeconds ?? 0,
-                  t.units,
-                )}`
+              ? ` · ${formatDistance(route.distanceMeters, t.units)}`
               : ''}
           </span>
         </span>
@@ -655,7 +657,10 @@ function VehicleLegendRow({
                   activeTaskId === task.id ? 'bg-[#f0efec]' : ''
                 }`}
               >
-                <span className="w-4 shrink-0 font-medium text-[#898781] tabular-nums">
+                <span
+                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-medium text-white tabular-nums"
+                  style={{ backgroundColor: group.color }}
+                >
                   {stopNumber}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[#0b0b0b]">{task.address}</span>

@@ -134,7 +134,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 p-0.5 shadow-sm">
+      <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-300 bg-slate-50 p-0.5 shadow-sm">
       <NavButton
         label={t.datePicker.previousDay}
         direction="back"
@@ -165,7 +165,7 @@ export function DatePicker({ date, today }: DatePickerProps) {
             ref={popoverRef}
             role="dialog"
             aria-label={t.datePicker.chooseDate}
-            className="absolute top-full left-1/2 z-20 mt-2 w-[268px] -translate-x-1/2 rounded-lg border border-[#e1e0d9] bg-white p-3 shadow-[0_10px_30px_rgba(11,11,11,0.14)]"
+            className="absolute top-full left-1/2 z-20 mt-2 w-[268px] -translate-x-1/2 rounded-lg border border-slate-300 bg-white p-3 shadow-[0_10px_30px_rgba(11,11,11,0.14)]"
           >
             <div className="mb-2 flex items-center justify-between">
               <NavButton

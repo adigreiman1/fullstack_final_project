@@ -25,7 +25,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           type="email"
           autoComplete="email"
           required
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
         />
       </div>
 
@@ -39,7 +39,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
         />
       </div>
 
@@ -52,7 +52,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-md border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? 'Signing in…' : 'Sign in'}
       </button>
