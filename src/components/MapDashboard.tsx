@@ -173,10 +173,21 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     setRecommendations([]);
   }, []);
 
+  /**
+   * The target date of an in-flight recommendation pick. Consumed once that
+   * date's tasks actually land — the generic "fit the whole day" effect below
+   * would otherwise snap the view back out to an overview right after the deep
+   * zoom plays. A ref rather than state: clearing it must not itself trigger a
+   * re-render, or that render would re-run the whole-day effect with the flag
+   * already gone and instantly cancel the flyTo that just started.
+   */
+  const pendingFocusDateRef = useRef<string | null>(null);
+
   // The recommendations list stays open and the map pin stays put after a pick —
   // dispatchers compare several dates by trial and error before committing.
   const selectRecommendation = useCallback(
     (recommendation: Recommendation) => {
+      pendingFocusDateRef.current = recommendation.task.scheduled_date;
       router.push(`/?date=${recommendation.task.scheduled_date}`);
     },
     [router],
@@ -204,9 +215,12 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   }, [draftLocation]);
 
   useEffect(() => {
-    if (!mapLoaded || !bounds) return;
+    // A recommendation pick is about to fly deep into the pin below once its
+    // date's tasks land — fitting the whole day's bounds first would just be a
+    // flash that the flyTo immediately overrides.
+    if (!mapLoaded || !bounds || pendingFocusDateRef.current === date) return;
     mapRef.current?.fitBounds(bounds, { padding: 72, maxZoom: 14, duration: 0 });
-  }, [mapLoaded, bounds]);
+  }, [mapLoaded, bounds, date]);
 
   useEffect(() => {
     if (!mapLoaded || !draftLocation) return;
@@ -216,6 +230,23 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
       duration: 800,
     });
   }, [mapLoaded, draftLocation]);
+
+  // Fires once the picked recommendation's date has actually loaded: drives a
+  // deep, focused zoom straight into the searched pin, rather than a wide shot
+  // that also frames the vehicle's other stops — at fleet scale a bounding box
+  // spanning a whole route reduces the zoom to something barely legible.
+  useEffect(() => {
+    if (!mapLoaded || pendingFocusDateRef.current !== date) return;
+    pendingFocusDateRef.current = null;
+
+    if (draftLocation) {
+      mapRef.current?.flyTo({
+        center: [draftLocation.lng, draftLocation.lat],
+        zoom: 16,
+        duration: 900,
+      });
+    }
+  }, [mapLoaded, date, draftLocation]);
 
   /**
    * Basemap labels follow the UI language.

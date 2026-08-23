@@ -32,7 +32,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <header className="relative isolate flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-sky-50 px-6 py-3 shadow-sm">
+      <header className="relative isolate z-50 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-sky-50 px-6 py-3 shadow-sm">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
