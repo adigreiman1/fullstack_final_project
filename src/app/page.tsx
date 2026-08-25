@@ -3,6 +3,7 @@ import { getDailyTasks } from '@/actions/tasks';
 import { DatePicker } from '@/components/DatePicker';
 import { MapDashboard } from '@/components/MapDashboard';
 import { isIsoDate, todayInServiceTimezone } from '@/lib/utils';
+import Image from 'next/image';
 
 /**
  * Server Component: fetches the requested day's tasks and hands them to the
@@ -24,12 +25,24 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <header className="relative isolate z-50 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-lilac-bg px-6 py-3 shadow-sm">
+      <header className="relative isolate z-50 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-[#eef4ff] px-6 py-3 shadow-sm">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
         />
-        <h1 className="text-xl font-bold tracking-tight text-deep-blue">מסלולי שירות יומיים</h1>
+        
+        {/* אזור הלוגו והכותרת בצד ימין */}
+        <div className="flex items-center gap-3">
+          <Image 
+            src="/logo.png" 
+            alt="A-Route Logo" 
+            width={50} 
+            height={50} 
+            className="object-contain"
+            priority 
+          />
+          <h1 className="text-xl font-bold tracking-tight text-[#1a2035]">מסלולי שירות יומיים</h1>
+        </div>
 
         <DatePicker date={date} today={today} />
 
@@ -37,7 +50,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
           <form action={signOut}>
             <button
               type="submit"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-deep-blue transition-colors hover:bg-dusty-pink"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-[#1a2035] transition-colors hover:bg-[#f7f0ff]"
             >
               התנתקות
             </button>

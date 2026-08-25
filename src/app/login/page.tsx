@@ -1,7 +1,8 @@
 import { LoginForm } from '@/components/LoginForm';
+import Image from 'next/image';
 
 export const metadata = {
-  title: 'Sign in · Service Mobility',
+  title: 'Sign in · A-Route',
 };
 
 export default async function LoginPage(props: PageProps<'/login'>) {
@@ -16,13 +17,25 @@ export default async function LoginPage(props: PageProps<'/login'>) {
         className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
       />
       <div className="flex w-full max-w-sm flex-col gap-8">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Service Mobility
-          </h1>
-          <p className="text-sm text-slate-600">
-            Sign in to view today’s routes.
-          </p>
+        
+        {/* אזור הלוגו והכותרת */}
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Image 
+            src="/logo.png" 
+            alt="A-Route Logo" 
+            width={140} 
+            height={140} 
+            className="object-contain"
+            priority 
+          />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1a2035]">
+              A-Route
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              התחברי כדי לצפות במסלולי היום
+            </p>
+          </div>
         </div>
 
         <LoginForm redirectTo={destination} />
