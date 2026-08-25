@@ -355,7 +355,7 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
 
         <div className="flex flex-col gap-1">
           <h2 className="text-[13px] font-semibold tracking-wide text-deep-blue uppercase">
-            מסלולים
+            מסלולי שירות יומיים
           </h2>
           <p className="text-xs text-[#52514e] tabular-nums">
             {date} · {stopsLabel(totalStops)} · {vehiclesLabel(vehicleCount)}

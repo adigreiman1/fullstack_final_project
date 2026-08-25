@@ -17,7 +17,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm font-medium text-slate-700">
-          Email
+          אימייל:
         </label>
         <input
           id="email"
@@ -31,7 +31,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="password" className="text-sm font-medium text-slate-700">
-          Password
+          סיסמה:
         </label>
         <input
           id="password"
