@@ -20,20 +20,20 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-     <header className="relative isolate z-50 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-[#eef4ff] px-6 py-2 shadow-sm">
+      <header className="relative isolate z-50 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-[#eef4ff] px-6 py-2 shadow-sm">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
         />
         
-        {/* צד ימין: הלוגו בפרופורציות הגדולות, כשהשטח הלבן נחתך למעלה ולמטה בלבד */}
-        <div className="flex shrink-0 items-center h-12 w-[240px] overflow-hidden">
+        {/* צד ימין: הלוגו בפרופורציות טבעיות ללא מתיחה */}
+        <div className="flex shrink-0 items-center">
           <Image 
             src="/logo2.png" 
             alt="A-Route Logo" 
             width={240} 
             height={120} 
-            className="object-contain mix-blend-multiply"
+            className="h-14 w-auto object-contain mix-blend-multiply"
             priority 
           />
         </div>
