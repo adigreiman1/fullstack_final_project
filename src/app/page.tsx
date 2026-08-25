@@ -5,11 +5,6 @@ import { MapDashboard } from '@/components/MapDashboard';
 import { isIsoDate, todayInServiceTimezone } from '@/lib/utils';
 import Image from 'next/image';
 
-/**
- * Server Component: fetches the requested day's tasks and hands them to the
- * client map. Grouping by vehicle and the Optimization API call both live
- * client-side in MapDashboard, so filtering never costs a round trip.
- */
 export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
   const { date: requestedDate } = await searchParams;
 
@@ -26,22 +21,20 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
         />
         
-        {/* צד ימין: הלוגו בפרופורציות טבעיות ללא מתיחה */}
+        {/* צד ימין: לוגו נקי ורגיל */}
         <div className="flex shrink-0 items-center">
           <Image 
             src="/logo2.png" 
             alt="A-Route Logo" 
-            width={240} 
-            height={120} 
-            className="h-14 w-auto object-contain mix-blend-multiply"
+            width={200} 
+            height={66} 
+            className="h-12 w-auto object-contain mix-blend-multiply"
             priority 
           />
         </div>
 
-        {/* אמצע: לוח שנה */}
         <DatePicker date={date} today={today} />
 
-        {/* צד שמאל: כפתור התנתקות */}
         <div className="flex items-center gap-8">
           <form action={signOut}>
             <button
