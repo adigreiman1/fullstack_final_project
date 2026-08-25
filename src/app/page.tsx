@@ -31,13 +31,13 @@ export default async function DashboardPage({ searchParams }: PageProps<'/'>) {
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
         />
         
-        {/* אזור הלוגו והכותרת בצד ימין */}
+       {/* אזור הלוגו והכותרת בצד ימין */}
         <div className="flex items-center gap-3">
           <Image 
             src="/logo.png" 
             alt="A-Route Logo" 
-            width={50} 
-            height={50} 
+            width={80} 
+            height={80} 
             className="object-contain"
             priority 
           />
