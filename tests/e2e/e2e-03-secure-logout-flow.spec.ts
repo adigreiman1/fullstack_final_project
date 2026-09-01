@@ -44,8 +44,8 @@ test.describe('E2E-03 - Secure Logout Flow', () => {
       await expect(page).toHaveURL(/\/login/);
 
       // 2. Dispatcher signs in.
-      await page.getByLabel('Email').fill(DISPATCHER_EMAIL!);
-      await page.getByLabel('Password').fill(DISPATCHER_PASSWORD!);
+      await page.getByLabel('אימייל:').fill(DISPATCHER_EMAIL!);
+      await page.getByLabel('סיסמה:').fill(DISPATCHER_PASSWORD!);
 
       await page
         .getByRole('button', { name: 'Sign in' })

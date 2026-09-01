@@ -29,8 +29,6 @@ interface PlaceDetailsResponse {
 
 interface AddressSearchProps {
   onSelect: (location: GeocodedLocation) => void;
-  /** The dashboard's current draft location, or null once "Clear Search" is used. */
-  draftLocation: GeocodedLocation | null;
 }
 
 const AUTOCOMPLETE_ENDPOINT = 'https://places.googleapis.com/v1/places:autocomplete';
@@ -70,10 +68,12 @@ async function fetchPlaceLocation(
 }
 
 /** Floating, debounced address search that autocompletes via the Google Places API (New). */
-export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
+export function AddressSearch({ onSelect }: AddressSearchProps) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>(() =>
+    typeof window === 'undefined' ? [] : loadRecentSearches(),
+  );
   const [isFocused, setIsFocused] = useState(false);
   /** Selecting a suggestion sets `query` to its address, which would otherwise
    *  re-trigger this effect and reopen the dropdown with a fresh search. */
@@ -82,9 +82,6 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
    *  Google's session-token billing model; a fresh token starts after each resolution. */
   const sessionToken = useRef(crypto.randomUUID());
 
-  useEffect(() => {
-    setRecentSearches(loadRecentSearches());
-  }, []);
 
   function rememberSearch(location: RecentSearch) {
     setRecentSearches((current) => {
@@ -128,10 +125,6 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
     rememberSearch(resolved);
   }
 
-  // "Clear Search" nulls draftLocation in the parent; the input has to follow.
-  useEffect(() => {
-    if (draftLocation === null) setQuery('');
-  }, [draftLocation]);
 
   useEffect(() => {
     if (justSelected.current) {
@@ -140,10 +133,7 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
     }
 
     const trimmed = query.trim();
-    if (trimmed.length < 3 || !GOOGLE_PLACES_API_KEY) {
-      setSuggestions([]);
-      return;
-    }
+    if (trimmed.length < 3 || !GOOGLE_PLACES_API_KEY) return;
 
     const controller = new AbortController();
     const timer = setTimeout(async () => {
@@ -205,7 +195,11 @@ export function AddressSearch({ onSelect, draftLocation }: AddressSearchProps) {
         <input
           type="text"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            const value = event.target.value;
+            setQuery(value);
+            if (value.trim().length < 3 || !GOOGLE_PLACES_API_KEY) setSuggestions([]);
+          }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="חיפוש כתובת..."

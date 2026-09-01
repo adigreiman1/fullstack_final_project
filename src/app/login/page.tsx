@@ -27,7 +27,7 @@ export default async function LoginPage(props: PageProps<'/login'>) {
             alt="A-Route Logo" 
             width={550} 
             height={180} 
-            className="object-contain mix-blend-multiply max-w-full"
+            className="h-auto max-w-full object-contain mix-blend-multiply"
             priority 
           />
           <p className="text-base text-slate-600 mt-2">

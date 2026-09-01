@@ -51,8 +51,8 @@ test.describe('E2E-02 - New Service Task Decision-Support Flow', () => {
       await expect(page).toHaveURL(/\/login/);
 
       // 2. Dispatcher signs in.
-      await page.getByLabel('Email').fill(DISPATCHER_EMAIL!);
-      await page.getByLabel('Password').fill(DISPATCHER_PASSWORD!);
+      await page.getByLabel('אימייל:').fill(DISPATCHER_EMAIL!);
+      await page.getByLabel('סיסמה:').fill(DISPATCHER_PASSWORD!);
 
       await page
         .getByRole('button', { name: 'Sign in' })

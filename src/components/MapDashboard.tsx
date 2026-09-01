@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { Map, Marker, NavigationControl, type MapRef } from 'react-map-gl/mapbox';
 
 import { getRecommendations, type Recommendation } from '@/actions/tasks';
-import { AddressSearch } from '@/components/AddressSearch';
+import { AddressSearch, type GeocodedLocation } from '@/components/AddressSearch';
 import { RouteLayer } from '@/components/RouteLayer';
 import { TaskTooltip } from '@/components/TaskTooltip';
 import { useOptimizedRoutes, type OptimizationRequest } from '@/hooks/useOptimizedRoutes';
@@ -165,10 +165,27 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   } | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [addressSearchResetKey, setAddressSearchResetKey] = useState(0);
+  const recommendationRequestId = useRef(0);
+
+  const handleDraftLocationSelect = useCallback((location: GeocodedLocation) => {
+    setDraftLocation(location);
+    setRecommendationsLoading(true);
+
+    const requestId = ++recommendationRequestId.current;
+    void getRecommendations(location.lat, location.lng).then((result) => {
+      if (requestId !== recommendationRequestId.current) return;
+      setRecommendations(result);
+      setRecommendationsLoading(false);
+    });
+  }, []);
 
   const clearDraftLocation = useCallback(() => {
+    recommendationRequestId.current += 1;
     setDraftLocation(null);
     setRecommendations([]);
+    setRecommendationsLoading(false);
+    setAddressSearchResetKey((current) => current + 1);
   }, []);
 
   const pendingFocusDateRef = useRef<string | null>(null);
@@ -180,26 +197,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     },
     [router],
   );
-
-  useEffect(() => {
-    if (!draftLocation) {
-      setRecommendations([]);
-      return;
-    }
-
-    let cancelled = false;
-    setRecommendationsLoading(true);
-
-    getRecommendations(draftLocation.lat, draftLocation.lng).then((result) => {
-      if (cancelled) return;
-      setRecommendations(result);
-      setRecommendationsLoading(false);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [draftLocation]);
 
   useEffect(() => {
     if (!mapLoaded || !bounds || pendingFocusDateRef.current === date) return;
@@ -341,7 +338,10 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[url('/chrome-bg.png')] bg-cover bg-center opacity-20 mix-blend-multiply"
         />
-        <AddressSearch onSelect={setDraftLocation} draftLocation={draftLocation} />
+        <AddressSearch
+          key={addressSearchResetKey}
+          onSelect={handleDraftLocationSelect}
+        />
 
         <div className="flex flex-col gap-1">
           <h2 className="text-[13px] font-semibold tracking-wide text-deep-blue uppercase">

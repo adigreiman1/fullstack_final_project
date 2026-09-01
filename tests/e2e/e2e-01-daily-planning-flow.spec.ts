@@ -3,11 +3,12 @@ import { expect, test } from '@playwright/test';
 /**
  * E2E-01 - Daily Planning Flow.
  *
- * Requires a controlled test environment containing:
- * - A valid dispatcher account.
- * - At least one service vehicle with service tasks scheduled for today.
- * - At least two valid-coordinate tasks for one vehicle so route
- *   optimization can be exercised.
+ * This test uses a known workday that already contains service-task data
+ * in the shared Supabase test environment.
+ *
+ * The selected date is 2026-08-20 because it contains multiple valid
+ * service tasks for the same vehicle, allowing both map markers and
+ * route optimization to be verified.
  *
  * Credentials are provided through environment variables and are never
  * hard-coded in the repository.
@@ -15,6 +16,8 @@ import { expect, test } from '@playwright/test';
 
 const DISPATCHER_EMAIL = process.env.E2E_DISPATCHER_EMAIL;
 const DISPATCHER_PASSWORD = process.env.E2E_DISPATCHER_PASSWORD;
+
+const TEST_DATE = '2026-08-20';
 
 test.describe('E2E-01 - Daily Planning Flow', () => {
   test.skip(
@@ -37,22 +40,31 @@ test.describe('E2E-01 - Daily Planning Flow', () => {
         consoleErrors.push(error.message);
       });
 
-      // 1. Dispatcher opens the application.
-      await page.goto('http://localhost:3000/');
+      // 1. Dispatcher opens a known workday that contains service tasks.
+      await page.goto(
+        `http://localhost:3000/?date=${TEST_DATE}`,
+      );
 
-      // Unauthenticated users should be redirected to Login.
+      // An unauthenticated user should be redirected to Login.
       await expect(page).toHaveURL(/\/login/);
 
       // 2. Dispatcher signs in.
-      await page.getByLabel('Email').fill(DISPATCHER_EMAIL!);
-      await page.getByLabel('Password').fill(DISPATCHER_PASSWORD!);
+      await page
+        .getByLabel('אימייל:')
+        .fill(DISPATCHER_EMAIL!);
+
+      await page
+        .getByLabel('סיסמה:')
+        .fill(DISPATCHER_PASSWORD!);
 
       await page
         .getByRole('button', { name: 'Sign in' })
         .click();
 
-      // 3. Dashboard loads.
-      await expect(page).toHaveURL('http://localhost:3000/');
+      // 3. After authentication, the requested workday should be restored.
+      await expect(page).toHaveURL(
+        `http://localhost:3000/?date=${TEST_DATE}`,
+      );
 
       await expect(
         page.getByRole('heading', {
@@ -60,7 +72,7 @@ test.describe('E2E-01 - Daily Planning Flow', () => {
         }),
       ).toBeVisible();
 
-      // 4. Service vehicles and map markers are loaded.
+      // 4. Service-task map markers should be available.
       const stopMarkers = page.locator(
         'button[aria-label*=", stop "]',
       );
@@ -69,19 +81,18 @@ test.describe('E2E-01 - Daily Planning Flow', () => {
         timeout: 15_000,
       });
 
-      // 5. Wait until route optimisation finishes.
+      // 5. Wait until route optimization finishes.
       await expect(
         page.getByText('מחשב מסלול…'),
       ).toHaveCount(0, {
         timeout: 20_000,
       });
 
-      // 6. Dispatcher selects a task from the visible task list.
+      // 6. Select a task from the sidebar.
       //
-      // We intentionally select the task from the sidebar instead of
-      // clicking a Mapbox marker. Map markers can temporarily be outside
-      // the current viewport, which makes direct marker clicks brittle
-      // in automated browser tests.
+      // Selecting from the sidebar is more stable than clicking directly
+      // on a map marker because a marker may temporarily be outside the
+      // current visible map viewport.
       const taskRows = page.locator(
         'aside ol button:not(:disabled)',
       );
@@ -92,7 +103,7 @@ test.describe('E2E-01 - Daily Planning Flow', () => {
 
       await taskRows.first().click();
 
-      // 7. Task information is displayed.
+      // 7. Task details should be displayed.
       const tooltip = page.locator('.task-tooltip');
 
       await expect(tooltip).toBeVisible();
@@ -101,7 +112,7 @@ test.describe('E2E-01 - Daily Planning Flow', () => {
         tooltip.getByText('כתובת'),
       ).toBeVisible();
 
-      // No unexpected JavaScript errors should occur.
+      // 8. No unexpected browser-side JavaScript errors should occur.
       expect(
         consoleErrors,
         `Unexpected console errors: ${consoleErrors.join('\n')}`,
