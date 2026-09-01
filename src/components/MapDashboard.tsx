@@ -66,6 +66,7 @@ function vehiclesLabel(count: number): string {
 
 export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   const mapRef = useRef<MapRef | null>(null);
+  const router = useRouter();
 
   /**
    * Selection state is *derived* against the current date rather than reset by an
@@ -118,12 +119,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
 
   /**
    * Toast fallback for Optimization API failures.
-   *
-   * A failed vehicle still has all of its stops on the map — only the drawn line
-   * is missing — so this is a notification, not an error state. The ref makes it
-   * fire once per vehicle rather than on every re-render, and the stable toast id
-   * stops a second vehicle failing from stacking a duplicate. Keyed by date as
-   * well, so the same vehicle failing on another day still gets reported.
    */
   const notifiedRouteErrors = useRef(new Set<string>());
 
@@ -159,7 +154,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     if (!bounds) return FALLBACK_VIEW;
     const [[west, south], [east, north]] = bounds;
     return { longitude: (west + east) / 2, latitude: (south + north) / 2, zoom: 10 };
-    // Read once, on mount — fitBounds below takes over from there.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -171,25 +165,14 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   } | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
-  const router = useRouter();
 
   const clearDraftLocation = useCallback(() => {
     setDraftLocation(null);
     setRecommendations([]);
   }, []);
 
-  /**
-   * The target date of an in-flight recommendation pick. Consumed once that
-   * date's tasks actually land — the generic "fit the whole day" effect below
-   * would otherwise snap the view back out to an overview right after the deep
-   * zoom plays. A ref rather than state: clearing it must not itself trigger a
-   * re-render, or that render would re-run the whole-day effect with the flag
-   * already gone and instantly cancel the flyTo that just started.
-   */
   const pendingFocusDateRef = useRef<string | null>(null);
 
-  // The recommendations list stays open and the map pin stays put after a pick —
-  // dispatchers compare several dates by trial and error before committing.
   const selectRecommendation = useCallback(
     (recommendation: Recommendation) => {
       pendingFocusDateRef.current = recommendation.task.scheduled_date;
@@ -198,7 +181,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     [router],
   );
 
-  /** Always relative to the real current date, not `date` — see getRecommendations(). */
   useEffect(() => {
     if (!draftLocation) {
       setRecommendations([]);
@@ -220,9 +202,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   }, [draftLocation]);
 
   useEffect(() => {
-    // A recommendation pick is about to fly deep into the pin below once its
-    // date's tasks land — fitting the whole day's bounds first would just be a
-    // flash that the flyTo immediately overrides.
     if (!mapLoaded || !bounds || pendingFocusDateRef.current === date) return;
     mapRef.current?.fitBounds(bounds, { padding: 72, maxZoom: 14, duration: 0 });
   }, [mapLoaded, bounds, date]);
@@ -236,10 +215,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     });
   }, [mapLoaded, draftLocation]);
 
-  // Fires once the picked recommendation's date has actually loaded: drives a
-  // deep, focused zoom straight into the searched pin, rather than a wide shot
-  // that also frames the vehicle's other stops — at fleet scale a bounding box
-  // spanning a whole route reduces the zoom to something barely legible.
   useEffect(() => {
     if (!mapLoaded || pendingFocusDateRef.current !== date) return;
     pendingFocusDateRef.current = null;
@@ -253,26 +228,13 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
     }
   }, [mapLoaded, date, draftLocation]);
 
-  /**
-   * Basemap labels are set to Hebrew once the map loads.
-   *
-   * mapbox-gl v3 has setLanguage built in — it swaps every symbol layer's
-   * text-field to the matching `name_xx` field — so the old mapbox-gl-language
-   * plugin is not needed. Guarded by mapLoaded because the style's layers do not
-   * exist before then, and wrapped because a style without a localised field for
-   * the requested language throws rather than falling back.
-   */
   useEffect(() => {
     if (!mapLoaded) return;
-
     const map = mapRef.current?.getMap();
     if (!map) return;
-
     try {
       map.setLanguage('he');
     } catch (error) {
-      // Not worth a toast: the map is fully usable, just labelled in the
-      // style's default language.
       console.warn('[MapDashboard] Could not localise basemap labels:', error);
     }
   }, [mapLoaded]);
@@ -332,20 +294,48 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
   const totalStops = tasks.length;
   const vehicleCount = groups.length;
 
+  // 1. בדיקה אם חסר מפתח Mapbox
   if (!MAPBOX_TOKEN) {
     return (
       <main className="flex flex-1 items-center justify-center px-8 py-10">
         <p role="alert" className="max-w-md rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-          חסר NEXT_PUBLIC_MAPBOX_TOKEN. יש להוסיף אותו לקובץ ‎.env.local ולהפעיל מחדש את שרת הפיתוח — ‏Next.js קורא קובצי סביבה רק בעת העלייה.
+          חסר NEXT_PUBLIC_MAPBOX_TOKEN. יש להוסיף אותו לקובץ ‎.env.local ולהפעיל מחדש את שרת הפיתוח.
         </p>
       </main>
     );
   }
 
+  // 2. מסך Demo מיוחד (Empty State) במקרה שאין נתונים ליום הנבחר
+  if (tasks.length === 0 && !loadError) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center p-8 bg-[#f9f9f7]">
+        <div className="max-w-md p-10 bg-white rounded-3xl shadow-lg border border-slate-200 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="p-5 bg-blue-50 rounded-full">
+              <svg className="w-12 h-12 text-[#1c3f60]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-[#1c3f60] mb-3">אין משימות מתוזמנות</h3>
+          <p className="text-[15px] text-[#52514e] mb-8 leading-relaxed">
+            לתאריך <span className="font-semibold">{date}</span> לא נמצאו משימות שירות במסד הנתונים. כדי להתרשם מיכולות המערכת, אלגוריתם הניווט, והמלצות השיבוץ - הכנו שבוע דמו עמוס בנתונים.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push('/?date=2026-09-01')}
+            className="w-full px-6 py-4 bg-[#1c3f60] hover:bg-[#2b5984] text-white font-medium rounded-xl transition-colors shadow-md text-lg"
+          >
+           טען שבוע להדגמה 01-07.09.26
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. הרנדור המקורי כשיש נתונים
   return (
     <div className="flex flex-1 overflow-hidden">
-      {/* border-e / ms-* rather than border-r / ml-*: logical properties flip
-          with dir="rtl" on their own, physical ones do not. */}
       <aside className="relative isolate flex w-[336px] shrink-0 flex-col gap-4 overflow-y-auto border-e border-[#e1e0d9] bg-sky-50 px-5 py-5">
         <div
           aria-hidden
@@ -365,12 +355,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
         {loadError ? (
           <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
             {loadError}
-          </p>
-        ) : null}
-
-        {groups.length === 0 && !loadError ? (
-          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            {`אין משימות מתוזמנות לתאריך ${date}. אפשר לדפדף בעזרת החיצים או לוח השנה בכותרת.`}
           </p>
         ) : null}
 
@@ -424,9 +408,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
           </div>
         ) : null}
 
-        {/* Legend and stop table in one: identity is never carried by colour
-            alone, and this doubles as the visible-label relief the low-contrast
-            palette slots require. */}
         <ul className="flex flex-col gap-2">
           {groups.map((group) => (
             <VehicleLegendRow
@@ -451,8 +432,6 @@ export function MapDashboard({ tasks, date, loadError }: MapDashboardProps) {
           mapboxAccessToken={MAPBOX_TOKEN}
           initialViewState={initialViewState}
           mapStyle={MAP_STYLE_URL}
-          // Strict Mode mounts twice in dev; without this the map is torn down
-          // and rebuilt, which costs a style load and a visible flash.
           reuseMaps
           style={{ position: 'absolute', inset: 0 }}
           onLoad={() => setMapLoaded(true)}
@@ -538,7 +517,6 @@ interface StopMarkerProps {
   task: ServiceTask;
   color: string;
   label: number;
-  /** The number shown is input order, not an optimised stop number, yet. */
   provisional: boolean;
   dimmed: boolean;
   active: boolean;
@@ -546,10 +524,6 @@ interface StopMarkerProps {
   onHoverEnd: () => void;
 }
 
-/**
- * A numbered pin. The number is the second encoding of route order (colour is
- * the first), and the white ring keeps overlapping stops separable.
- */
 function StopMarker({
   task,
   color,
@@ -563,7 +537,6 @@ function StopMarker({
   return (
     <button
       type="button"
-      // Bigger than the mark itself so the hit target is comfortable at zoom.
       className="relative grid size-7 place-items-center rounded-full text-[11px] font-semibold tabular-nums text-white ring-2 ring-white transition-transform"
       style={{
         backgroundColor: color,
@@ -578,8 +551,6 @@ function StopMarker({
       onFocus={onHoverStart}
       onBlur={onHoverEnd}
     >
-      {/* Route order is the only thing a pin encodes — colour for the vehicle,
-          number for the position in its run. */}
       {label}
     </button>
   );
@@ -610,7 +581,6 @@ function VehicleLegendRow({
 }: VehicleLegendRowProps) {
   const installerName = group.tasks.find((task) => task.installer_name)?.installer_name ?? group.vehicleId;
 
-  // Ordered stops read top-to-bottom in drive order once optimisation lands.
   const orderedTasks = useMemo(() => {
     if (!route || route.status !== 'ready') return group.tasks;
     return [...group.tasks].sort(
@@ -654,11 +624,8 @@ function VehicleLegendRow({
       ) : null}
 
       {route?.status === 'error' ? (
-        // Markers stay on the map; only the drawn route is missing.
         <p className="px-3 pb-2 text-[11px] text-[#d03b3b]">
           המסלול אינו זמין — מוצגות עצירות בלבד.{' '}
-          {/* The API's own message stays untranslated on purpose: it is a
-              verbatim upstream diagnostic, not UI copy. */}
           <span dir="ltr">{route.error}</span>
         </p>
       ) : null}
@@ -684,8 +651,6 @@ function VehicleLegendRow({
 
           return (
             <li key={task.id}>
-              {/* The row's only action is navigational: centre the map on this
-                  stop. Nothing here writes. */}
               <button
                 type="button"
                 disabled={!routable}
@@ -715,7 +680,6 @@ function VehicleLegendRow({
   );
 }
 
-/** Legend swatch that shows the route's colour *and* its dash pattern. */
 function DashPreview({
   color,
   dashArray,
@@ -725,7 +689,6 @@ function DashPreview({
   dashArray: readonly number[] | undefined;
   muted: boolean;
 }) {
-  // line-dasharray is in line widths; the route renders at 3.5px, so scale to match.
   const strokeWidth = 3.5;
   const dash = dashArray?.map((value) => value * strokeWidth).join(' ');
 
